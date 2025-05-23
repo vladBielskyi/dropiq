@@ -1,8 +1,35 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <menu-config xmlns="http://jmix.io/schema/flowui/menu">
 
-    <menu id="application" title="msg://com.dropiq.admin/menu.application.title" opened="true">
+    <menu id="main" title="msg://com.dropiq.admin/menu.main.title" opened="true">
+        <item view="DashboardView" title="msg://com.dropiq.admin.view.dashboard/DashboardView.title"/>
+        <separator/>
+        <item view="DataSource.list" title="msg://com.dropiq.admin.view.datasource/DataSourceListView.title"/>
+        <item view="Dataset.list" title="msg://com.dropiq.admin.view.dataset/DatasetListView.title"/>
+        <item view="Product.list" title="msg://com.dropiq.admin.view.product/ProductListView.title"/>
+    </menu>
+
+    <menu id="ai" title="msg://com.dropiq.admin/menu.ai.title" opened="false">
+        <item view="AIOptimization.list" title="msg://com.dropiq.admin.view.ai/AIOptimizationView.title"/>
+        <item view="TrendAnalysis.view" title="msg://com.dropiq.admin.view.trends/TrendAnalysisView.title"/>
+        <item view="SEOAnalysis.view" title="msg://com.dropiq.admin.view.seo/SEOAnalysisView.title"/>
+    </menu>
+
+    <menu id="export" title="msg://com.dropiq.admin/menu.export.title" opened="false">
+        <item view="ExportConfiguration.list" title="msg://com.dropiq.admin.view.export/ExportConfigurationView.title"/>
+        <item view="ExportHistory.list" title="msg://com.dropiq.admin.view.export/ExportHistoryView.title"/>
+    </menu>
+
+    <menu id="analytics" title="msg://com.dropiq.admin/menu.analytics.title" opened="false">
+        <item view="Analytics.dashboard" title="msg://com.dropiq.admin.view.analytics/AnalyticsDashboardView.title"/>
+        <item view="Reports.list" title="msg://com.dropiq.admin.view.reports/ReportsView.title"/>
+    </menu>
+
+    <menu id="administration" title="msg://com.dropiq.admin/menu.administration.title" opened="false">
         <item view="User.list" title="msg://com.dropiq.admin.view.user/UserListView.title"/>
+        <item view="SystemSettings.view" title="msg://com.dropiq.admin.view.settings/SystemSettingsView.title"/>
+        <separator/>
+        <item view="SystemLogs.view" title="msg://com.dropiq.admin.view.logs/SystemLogsView.title"/>
     </menu>
 
 </menu-config>

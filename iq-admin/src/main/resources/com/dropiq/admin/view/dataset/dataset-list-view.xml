@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://DatasetListView.title"
+      focusComponent="datasetsDataGrid">
+    <data>
+        <collection id="datasetsDc"
+                    class="com.dropiq.admin.entity.Dataset">
+            <fetchPlan extends="_base">
+                <property name="dataSource" fetchPlan="_base"/>
+                <property name="status"/>
+                <property name="totalProducts"/>
+                <property name="activeProducts"/>
+                <property name="optimizedProducts"/>
+                <property name="exportedProducts"/>
+                <property name="defaultMarkup"/>
+                <property name="lastSync"/>
+                <property name="createdAt"/>
+                <property name="aiOptimizationEnabled"/>
+                <property name="seoOptimizationEnabled"/>
+                <property name="trendAnalysisEnabled"/>
+            </fetchPlan>
+            <loader id="datasetsDl" readOnly="true">
+                <query>
+                    <![CDATA[select d from Dataset d order by d.createdAt desc]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+            <genericFilter component="genericFilter"/>
+            <pagination component="pagination"/>
+        </urlQueryParameters>
+    </facets>
+    <layout>
+        <genericFilter id="genericFilter" dataLoader="datasetsDl">
+            <properties include="name,status,dataSource,aiOptimizationEnabled"/>
+        </genericFilter>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="createButton" action="datasetsDataGrid.createAction"/>
+            <button id="editButton" action="datasetsDataGrid.editAction"/>
+            <button id="removeButton" action="datasetsDataGrid.removeAction"/>
+            <separator/>
+            <button id="syncButton" action="datasetsDataGrid.syncAction"/>
+            <button id="optimizeButton" action="datasetsDataGrid.optimizeAction"/>
+            <button id="exportButton" action="datasetsDataGrid.exportAction"/>
+            <separator/>
+            <button id="viewProductsButton" action="datasetsDataGrid.viewProductsAction"/>
+            <simplePagination id="pagination" dataLoader="datasetsDl"/>
+        </hbox>
+        <dataGrid id="datasetsDataGrid"
+                  widthFull
+                  columnReorderingAllowed="true"
+                  minHeight="25em"
+                  dataContainer="datasetsDc">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+                <action id="syncAction" text="msg://syncAction" icon="REFRESH"/>
+                <action id="optimizeAction" text="msg://optimizeAction" icon="MAGIC"/>
+                <action id="exportAction" text="msg://exportAction" icon="UPLOAD"/>
+                <action id="viewProductsAction" text="msg://viewProductsAction" icon="EYE"/>
+            </actions>
+            <columns resizable="true">
+                <column property="name" width="200px" sortable="true"/>
+                <column key="dataSourceName" width="150px" header="msg://dataSource" sortable="true">
+                    <renderer>
+                        <template>
+                            <span th:text="${item.dataSource != null ? item.dataSource.name : '-'}"/>
+                        </template>
+                    </renderer>
+                </column>
+                <column property="status" width="120px" sortable="true"/>
+                <column property="totalProducts" width="100px" header="msg://totalProducts" textAlign="CENTER"/>
+                <column property="activeProducts" width="100px" header="msg://activeProducts" textAlign="CENTER"/>
+                <column property="optimizedProducts" width="100px" header="msg://optimizedProducts" textAlign="CENTER"/>
+                <column key="defaultMarkupFormatted" width="100px" header="msg://defaultMarkup" textAlign="CENTER">
+                    <renderer>
+                        <template>
+                            <span th:if="${item.defaultMarkup != null}"
+                                  th:text="${item.defaultMarkup + '%'}"/>
+                        </template>
+                    </renderer>
+                </column>
+                <column property="lastSync" width="150px" sortable="true"/>
+                <column property="createdAt" width="150px" sortable="true"/>
+                <column key="aiFeatures" width="120px" header="msg://aiFeatures" textAlign="CENTER">
+                    <renderer>
+                        <template>
+                            <div style="display: flex; gap: 4px; justify-content: center;">
+                                <span th:if="${item.aiOptimizationEnabled}"
+                                      title="AI Optimization"
+                                      style="font-size: 14px;">🤖</span>
+                                <span th:if="${item.seoOptimizationEnabled}"
+                                      title="SEO Optimization"
+                                      style="font-size: 14px;">🎯</span>
+                                <span th:if="${item.trendAnalysisEnabled}"
+                                      title="Trend Analysis"
+                                      style="font-size: 14px;">📈</span>
+                            </div>
+                        </template>
+                    </renderer>
+                </column>
+            </columns>
+        </dataGrid>
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>

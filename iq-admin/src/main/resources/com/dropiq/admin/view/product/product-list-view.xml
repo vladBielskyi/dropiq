@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://ProductListView.title"
+      focusComponent="productsDataGrid">
+    <data>
+        <collection id="productsDc"
+                    class="com.dropiq.admin.entity.Product">
+            <fetchPlan extends="_base">
+                <property name="dataset" fetchPlan="_base"/>
+                <property name="originalPrice"/>
+                <property name="sellingPrice"/>
+                <property name="markupPercentage"/>
+                <property name="stock"/>
+                <property name="available"/>
+                <property name="active"/>
+                <property name="featured"/>
+                <property name="externalCategoryName"/>
+                <property name="sourceType"/>
+                <property name="optimizationStatus"/>
+                <property name="aiOptimized"/>
+                <property name="seoScore"/>
+                <property name="trendScore"/>
+                <property name="primaryImageUrl"/>
+                <property name="imageUrls"/>
+                <property name="createdAt"/>
+                <property name="updatedAt"/>
+            </fetchPlan>
+            <loader id="productsDl" readOnly="true">
+                <query>
+                    <![CDATA[select p from Product p order by p.createdAt desc]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+            <genericFilter component="genericFilter"/>
+            <pagination component="pagination"/>
+        </urlQueryParameters>
+    </facets>
+    <layout>
+        <genericFilter id="genericFilter" dataLoader="productsDl">
+            <properties include="name,externalCategoryName,sourceType,active,available,optimizationStatus"/>
+        </genericFilter>
+
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="createButton" action="productsDataGrid.createAction"/>
+            <button id="editButton" action="productsDataGrid.editAction"/>
+            <button id="removeButton" action="productsDataGrid.removeAction"/>
+            <separator/>
+            <button id="activateButton" action="productsDataGrid.activateAction"/>
+            <button id="deactivateButton" action="productsDataGrid.deactivateAction"/>
+            <button id="applyMarkupButton" action="productsDataGrid.applyMarkupAction"/>
+            <separator/>
+            <button id="optimizeButton" action="productsDataGrid.optimizeAction"/>
+            <button id="exportButton" action="productsDataGrid.exportAction"/>
+            <simplePagination id="pagination" dataLoader="productsDl"/>
+        </hbox>
+
+        <dataGrid id="productsDataGrid"
+                  widthFull
+                  columnReorderingAllowed="true"
+                  minHeight="30em"
+                  dataContainer="productsDc"
+                  selectionMode="MULTI">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+                <action id="activateAction" text="msg://activateAction" icon="PLAY"/>
+                <action id="deactivateAction" text="msg://deactivateAction" icon="PAUSE"/>
+                <action id="applyMarkupAction" text="msg://applyMarkupAction" icon="DOLLAR"/>
+                <action id="optimizeAction" text="msg://optimizeAction" icon="MAGIC"/>
+                <action id="exportAction" text="msg://exportAction" icon="UPLOAD"/>
+            </actions>
+            <columns resizable="true">
+                <column key="image" width="80px" header="msg://image" textAlign="CENTER">
+                    <componentRenderer>
+                        <![CDATA[
+                        return item.getPrimaryImageUrl() != null
+                            ? new com.vaadin.flow.component.html.Image(item.getPrimaryImageUrl(), "Product")
+                            : new com.vaadin.flow.component.html.Span("📷");
+                        ]]>
+                    </componentRenderer>
+                </column>
+                <column property="name" width="250px" sortable="true"/>
+                <column property="externalCategoryName" width="150px" header="msg://category" sortable="true"/>
+                <column property="originalPrice" width="120px" header="msg://originalPrice" textAlign="END" sortable="true"/>
+                <column property="sellingPrice" width="120px" header="msg://sellingPrice" textAlign="END" sortable="true"/>
+                <column key="markup" width="100px" header="msg://markup" textAlign="CENTER" sortable="true">
+                    <componentRenderer>
+                        <![CDATA[
+                        return item.getMarkupPercentage() != null
+                            ? new com.vaadin.flow.component.html.Span(item.getMarkupPercentage() + "%")
+                            : new com.vaadin.flow.component.html.Span("-");
+                        ]]>
+                    </componentRenderer>
+                </column>
+                <column property="stock" width="80px" textAlign="CENTER" sortable="true"/>
+                <column key="available" width="100px" header="msg://available" textAlign="CENTER">
+                    <componentRenderer>
+                        <![CDATA[
+                        com.vaadin.flow.component.icon.VaadinIcon icon = item.getAvailable()
+                            ? com.vaadin.flow.component.icon.VaadinIcon.CHECK
+                            : com.vaadin.flow.component.icon.VaadinIcon.CLOSE;
+                        com.vaadin.flow.component.icon.Icon iconComponent = icon.create();
+                        iconComponent.setColor(item.getAvailable() ? "var(--lumo-success-color)" : "var(--lumo-error-color)");
+                        return iconComponent;
+                        ]]>
+                    </componentRenderer>
+                </column>
+                <column key="active" width="80px" textAlign="CENTER">
+                    <componentRenderer>
+                        <![CDATA[
+                        com.vaadin.flow.component.icon.VaadinIcon icon = item.getActive()
+                            ? com.vaadin.flow.component.icon.VaadinIcon.CHECK
+                            : com.vaadin.flow.component.icon.VaadinIcon.CLOSE;
+                        com.vaadin.flow.component.icon.Icon iconComponent = icon.create();
+                        iconComponent.setColor(item.getActive() ? "var(--lumo-success-color)" : "var(--lumo-error-color)");
+                        return iconComponent;
+                        ]]>
+                    </componentRenderer>
+                </column>
+                <column property="sourceType" width="100px" header="msg://source" sortable="true"/>
+                <column property="optimizationStatus" width="120px" header="msg://optimization" sortable="true"/>
+                <column key="scores" width="120px" header="msg://scores" textAlign="CENTER">
+                    <componentRenderer>
+                        <![CDATA[
+                        com.vaadin.flow.component.orderedlayout.VerticalLayout layout =
+                            new com.vaadin.flow.component.orderedlayout.VerticalLayout();
+                        layout.setSpacing(false);
+                        layout.setPadding(false);
+                        layout.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+
+                        if (item.getSeoScore() != null) {
+                            com.vaadin.flow.component.html.Span seoSpan =
+                                new com.vaadin.flow.component.html.Span("SEO: " + item.getSeoScore());
+                            seoSpan.getStyle().set("font-size", "11px");
+                            layout.add(seoSpan);
+                        }
+
+                        if (item.getTrendScore() != null) {
+                            com.vaadin.flow.component.html.Span trendSpan =
+                                new com.vaadin.flow.component.html.Span("Trend: " + item.getTrendScore());
+                            trendSpan.getStyle().set("font-size", "11px");
+                            layout.add(trendSpan);
+                        }
+
+                        return layout;
+                        ]]>
+                    </componentRenderer>
+                </column>
+                <column key="flags" width="100px" header="msg://flags" textAlign="CENTER">
+                    <componentRenderer>
+                        <![CDATA[
+                        com.vaadin.flow.component.orderedlayout.HorizontalLayout layout =
+                            new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
+                        layout.setSpacing(false);
+                        layout.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.CENTER);
+
+                        if (Boolean.TRUE.equals(item.getAiOptimized())) {
+                            com.vaadin.flow.component.html.Span aiSpan = new com.vaadin.flow.component.html.Span("🤖");
+                            aiSpan.setTitle("AI Optimized");
+                            layout.add(aiSpan);
+                        }
+
+                        if (Boolean.TRUE.equals(item.getFeatured())) {
+                            com.vaadin.flow.component.html.Span featuredSpan = new com.vaadin.flow.component.html.Span("⭐");
+                            featuredSpan.setTitle("Featured");
+                            layout.add(featuredSpan);
+                        }
+
+                        if (item.getTrendScore() != null && item.getTrendScore().doubleValue() >= 80) {
+                            com.vaadin.flow.component.html.Span trendingSpan = new com.vaadin.flow.component.html.Span("🔥");
+                            trendingSpan.setTitle("Trending");
+                            layout.add(trendingSpan);
+                        }
+
+                        return layout;
+                        ]]>
+                    </componentRenderer>
+                </column>
+                <column property="updatedAt" width="150px" sortable="true"/>
+            </columns>
+        </dataGrid>
+
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>
