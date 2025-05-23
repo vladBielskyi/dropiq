@@ -1,9 +1,7 @@
 package com.dropiq.admin.view.product;
 
-import com.dropiq.admin.entity.Product;
 import com.dropiq.admin.model.ProductOptimizationStatus;
 import com.dropiq.admin.service.ProductService;
-import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -13,7 +11,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.math.BigDecimal;
 import java.util.function.Consumer;
 
 @ViewController(id = "ProductFilterDialog")

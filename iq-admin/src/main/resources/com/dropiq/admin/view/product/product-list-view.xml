@@ -63,11 +63,11 @@
         </hbox>
 
         <dataGrid id="productsDataGrid"
-                  widthFull
+                  width="100%"
                   columnReorderingAllowed="true"
                   minHeight="30em"
                   dataContainer="productsDc"
-                  selectionMode="MULTI">
+                  multiSelect="true">
             <actions>
                 <action id="createAction" type="list_create"/>
                 <action id="editAction" type="list_edit"/>
@@ -80,110 +80,61 @@
             </actions>
             <columns resizable="true">
                 <column key="image" width="80px" header="msg://image" textAlign="CENTER">
-                    <componentRenderer>
-                        <![CDATA[
-                        return item.getPrimaryImageUrl() != null
-                            ? new com.vaadin.flow.component.html.Image(item.getPrimaryImageUrl(), "Product")
-                            : new com.vaadin.flow.component.html.Span("📷");
-                        ]]>
-                    </componentRenderer>
+                    <template>
+                        <image src="${item.primaryImageUrl}"
+                               alternateText="Product Image"
+                               width="50px" height="50px"
+                               visible="${item.primaryImageUrl != null}"
+                               style="object-fit: cover; border-radius: 4px;"/>
+                        <span text="📷" visible="${item.primaryImageUrl == null}"
+                              style="font-size: 24px; color: var(--lumo-disabled-text-color);"/>
+                    </template>
                 </column>
                 <column property="name" width="250px" sortable="true"/>
                 <column property="externalCategoryName" width="150px" header="msg://category" sortable="true"/>
                 <column property="originalPrice" width="120px" header="msg://originalPrice" textAlign="END" sortable="true"/>
                 <column property="sellingPrice" width="120px" header="msg://sellingPrice" textAlign="END" sortable="true"/>
-                <column key="markup" width="100px" header="msg://markup" textAlign="CENTER" sortable="true">
-                    <componentRenderer>
-                        <![CDATA[
-                        return item.getMarkupPercentage() != null
-                            ? new com.vaadin.flow.component.html.Span(item.getMarkupPercentage() + "%")
-                            : new com.vaadin.flow.component.html.Span("-");
-                        ]]>
-                    </componentRenderer>
+                <column property="markupPercentage" width="100px" header="msg://markup" textAlign="CENTER" sortable="true">
+                    <template>
+                        <span text="${item.markupPercentage}%"
+                              visible="${item.markupPercentage != null}"/>
+                    </template>
                 </column>
                 <column property="stock" width="80px" textAlign="CENTER" sortable="true"/>
-                <column key="available" width="100px" header="msg://available" textAlign="CENTER">
-                    <componentRenderer>
-                        <![CDATA[
-                        com.vaadin.flow.component.icon.VaadinIcon icon = item.getAvailable()
-                            ? com.vaadin.flow.component.icon.VaadinIcon.CHECK
-                            : com.vaadin.flow.component.icon.VaadinIcon.CLOSE;
-                        com.vaadin.flow.component.icon.Icon iconComponent = icon.create();
-                        iconComponent.setColor(item.getAvailable() ? "var(--lumo-success-color)" : "var(--lumo-error-color)");
-                        return iconComponent;
-                        ]]>
-                    </componentRenderer>
+                <column property="available" width="100px" header="msg://available" textAlign="CENTER">
+                    <template>
+                        <icon icon="${item.available ? 'CHECK' : 'CLOSE'}"
+                              style="color: ${item.available ? 'var(--lumo-success-color)' : 'var(--lumo-error-color)'}"/>
+                    </template>
                 </column>
-                <column key="active" width="80px" textAlign="CENTER">
-                    <componentRenderer>
-                        <![CDATA[
-                        com.vaadin.flow.component.icon.VaadinIcon icon = item.getActive()
-                            ? com.vaadin.flow.component.icon.VaadinIcon.CHECK
-                            : com.vaadin.flow.component.icon.VaadinIcon.CLOSE;
-                        com.vaadin.flow.component.icon.Icon iconComponent = icon.create();
-                        iconComponent.setColor(item.getActive() ? "var(--lumo-success-color)" : "var(--lumo-error-color)");
-                        return iconComponent;
-                        ]]>
-                    </componentRenderer>
+                <column property="active" width="80px" textAlign="CENTER">
+                    <template>
+                        <icon icon="${item.active ? 'CHECK' : 'CLOSE'}"
+                              style="color: ${item.active ? 'var(--lumo-success-color)' : 'var(--lumo-error-color)'}"/>
+                    </template>
                 </column>
                 <column property="sourceType" width="100px" header="msg://source" sortable="true"/>
                 <column property="optimizationStatus" width="120px" header="msg://optimization" sortable="true"/>
                 <column key="scores" width="120px" header="msg://scores" textAlign="CENTER">
-                    <componentRenderer>
-                        <![CDATA[
-                        com.vaadin.flow.component.orderedlayout.VerticalLayout layout =
-                            new com.vaadin.flow.component.orderedlayout.VerticalLayout();
-                        layout.setSpacing(false);
-                        layout.setPadding(false);
-                        layout.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
-
-                        if (item.getSeoScore() != null) {
-                            com.vaadin.flow.component.html.Span seoSpan =
-                                new com.vaadin.flow.component.html.Span("SEO: " + item.getSeoScore());
-                            seoSpan.getStyle().set("font-size", "11px");
-                            layout.add(seoSpan);
-                        }
-
-                        if (item.getTrendScore() != null) {
-                            com.vaadin.flow.component.html.Span trendSpan =
-                                new com.vaadin.flow.component.html.Span("Trend: " + item.getTrendScore());
-                            trendSpan.getStyle().set("font-size", "11px");
-                            layout.add(trendSpan);
-                        }
-
-                        return layout;
-                        ]]>
-                    </componentRenderer>
+                    <template>
+                        <vbox spacing="XS">
+                            <span text="SEO: ${item.seoScore}"
+                                  visible="${item.seoScore != null}"
+                                  style="font-size: 11px;"/>
+                            <span text="Trend: ${item.trendScore}"
+                                  visible="${item.trendScore != null}"
+                                  style="font-size: 11px;"/>
+                        </vbox>
+                    </template>
                 </column>
                 <column key="flags" width="100px" header="msg://flags" textAlign="CENTER">
-                    <componentRenderer>
-                        <![CDATA[
-                        com.vaadin.flow.component.orderedlayout.HorizontalLayout layout =
-                            new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
-                        layout.setSpacing(false);
-                        layout.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.CENTER);
-
-                        if (Boolean.TRUE.equals(item.getAiOptimized())) {
-                            com.vaadin.flow.component.html.Span aiSpan = new com.vaadin.flow.component.html.Span("🤖");
-                            aiSpan.setTitle("AI Optimized");
-                            layout.add(aiSpan);
-                        }
-
-                        if (Boolean.TRUE.equals(item.getFeatured())) {
-                            com.vaadin.flow.component.html.Span featuredSpan = new com.vaadin.flow.component.html.Span("⭐");
-                            featuredSpan.setTitle("Featured");
-                            layout.add(featuredSpan);
-                        }
-
-                        if (item.getTrendScore() != null && item.getTrendScore().doubleValue() >= 80) {
-                            com.vaadin.flow.component.html.Span trendingSpan = new com.vaadin.flow.component.html.Span("🔥");
-                            trendingSpan.setTitle("Trending");
-                            layout.add(trendingSpan);
-                        }
-
-                        return layout;
-                        ]]>
-                    </componentRenderer>
+                    <template>
+                        <hbox spacing="XS">
+                            <span text="🤖" visible="${item.aiOptimized}" title="AI Optimized"/>
+                            <span text="⭐" visible="${item.featured}" title="Featured"/>
+                            <span text="🔥" visible="${item.trendScore != null and item.trendScore >= 80}" title="Trending"/>
+                        </hbox>
+                    </template>
                 </column>
                 <column property="updatedAt" width="150px" sortable="true"/>
             </columns>

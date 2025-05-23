@@ -7,12 +7,16 @@ import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Getter
+@Setter
 @JmixEntity
 @Entity
 @Table(name = "DATA_SOURCE")
@@ -21,7 +25,7 @@ public class DataSource {
     @Id
     @Column(name = "ID")
     @JmixGeneratedValue
-    private UUID id;
+    private Long id;
 
     @Version
     @Column(name = "VERSION", nullable = false)
@@ -91,166 +95,9 @@ public class DataSource {
     @Column(name = "LAST_ERROR_MESSAGE", length = 2000)
     private String lastErrorMessage;
 
-    // Getters and setters
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
     @InstanceName
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public DataSourceType getSourceType() {
-        return sourceType;
-    }
-
-    public void setSourceType(DataSourceType sourceType) {
-        this.sourceType = sourceType;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
-    }
-
-    public Map<String, String> getConfiguration() {
-        return configuration;
-    }
-
-    public void setConfiguration(Map<String, String> configuration) {
-        this.configuration = configuration;
-    }
-
-    public DataSourceStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(DataSourceStatus status) {
-        this.status = status;
-    }
-
-    public Boolean getAutoSync() {
-        return autoSync;
-    }
-
-    public void setAutoSync(Boolean autoSync) {
-        this.autoSync = autoSync;
-    }
-
-    public Integer getSyncIntervalHours() {
-        return syncIntervalHours;
-    }
-
-    public void setSyncIntervalHours(Integer syncIntervalHours) {
-        this.syncIntervalHours = syncIntervalHours;
-    }
-
-    public LocalDateTime getLastSync() {
-        return lastSync;
-    }
-
-    public void setLastSync(LocalDateTime lastSync) {
-        this.lastSync = lastSync;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public Integer getTotalProducts() {
-        return totalProducts;
-    }
-
-    public void setTotalProducts(Integer totalProducts) {
-        this.totalProducts = totalProducts;
-    }
-
-    public Integer getActiveProducts() {
-        return activeProducts;
-    }
-
-    public void setActiveProducts(Integer activeProducts) {
-        this.activeProducts = activeProducts;
-    }
-
-    public Integer getSyncCount() {
-        return syncCount;
-    }
-
-    public void setSyncCount(Integer syncCount) {
-        this.syncCount = syncCount;
-    }
-
-    public Integer getErrorCount() {
-        return errorCount;
-    }
-
-    public void setErrorCount(Integer errorCount) {
-        this.errorCount = errorCount;
-    }
-
-    public String getLastErrorMessage() {
-        return lastErrorMessage;
-    }
-
-    public void setLastErrorMessage(String lastErrorMessage) {
-        this.lastErrorMessage = lastErrorMessage;
     }
 
     @PrePersist

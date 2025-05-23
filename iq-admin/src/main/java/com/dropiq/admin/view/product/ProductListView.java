@@ -22,7 +22,8 @@ import java.util.UUID;
 @ViewDescriptor(path = "product-list-view.xml")
 @LookupComponent("productsDataGrid")
 @DialogMode(width = "90em", height = "80em")
-public class ProductListView extends StandardListView<Product> implements HasUrlParameter<String> {
+public class ProductListView extends StandardListView<Product> // implements HasUrlParameter<String> {
+{
 
     @ViewComponent
     private DataGrid<Product> productsDataGrid;
@@ -44,12 +45,12 @@ public class ProductListView extends StandardListView<Product> implements HasUrl
 
     private DataSet currentDataset;
 
-    @Override
+    //@Override
     public void setParameter(BeforeEvent event, String parameter) {
         if (parameter != null && parameter.startsWith("datasetId=")) {
             String datasetId = parameter.substring("datasetId=".length());
             try {
-                UUID datasetUuid = UUID.fromString(datasetId);
+                Long datasetUuid = Long.valueOf(datasetId);
                 currentDataset = dataManager.load(DataSet.class).id(datasetUuid).one();
                 filterByDataset(currentDataset);
             } catch (Exception e) {

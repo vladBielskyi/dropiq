@@ -66,22 +66,18 @@ public class DataSourceDetailView extends StandardDetailView<DataSource> {
     private void updateFieldsForSourceType(DataSourceType sourceType) {
         switch (sourceType) {
             case MYDROP:
-                urlField.setLabel("MyDrop API URL");
-                urlField.setPlaceholder("https://backend.mydrop.com.ua/vendor/api/export/...");
+                urlField.setText("MyDrop API URL");
                 break;
             case EASYDROP:
-                urlField.setLabel("EasyDrop API URL");
-                urlField.setPlaceholder("https://easydrop.one/prom-export?key=...");
+                urlField.setText("EasyDrop API URL");
                 break;
             case CSV_FILE:
             case EXCEL_FILE:
             case XML_FILE:
-                urlField.setLabel("File Path");
-                urlField.setPlaceholder("/path/to/file or upload URL");
+                urlField.setText("File Path");
                 break;
             case CUSTOM_API:
-                urlField.setLabel("Custom API Endpoint");
-                urlField.setPlaceholder("https://your-api.com/products");
+                urlField.setText("Custom API Endpoint");
                 break;
         }
     }

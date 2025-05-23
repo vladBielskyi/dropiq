@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Set;
 
 @Route(value = "datasets/:id", layout = MainView.class)
-@ViewController(id = "Dataset.detail")
+@ViewController(id = "DataSet.detail")
 @ViewDescriptor(path = "dataset-detail-view.xml")
 @EditedEntityContainer("datasetDc")
 public class DataSetDetailView extends StandardDetailView<DataSet> {
@@ -251,10 +251,10 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
         updateButtonStates();
     }
 
-    @Subscribe("productsDataGrid")
-    public void onProductsDataGridSelection(final DataGrid.SelectionEvent<Product> event) {
-        updateBulkActionButtons();
-    }
+//    @Subscribe("productsDataGrid")
+//    public void onProductsDataGridSelection(final DataGrid.SelectionEvent<Product> event) {
+//        updateBulkActionButtons();
+//    }
 
     private void updateButtonStates() {
         DataSet dataset = getEditedEntity();

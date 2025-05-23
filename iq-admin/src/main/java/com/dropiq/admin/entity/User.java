@@ -8,6 +8,8 @@ import io.jmix.core.metamodel.annotation.DependsOnProperties;
 import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import io.jmix.security.authentication.JmixUserDetails;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -15,6 +17,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
+@Getter
+@Setter
 @JmixEntity
 @Entity
 @Table(name = "USER_", indexes = {
@@ -58,69 +62,9 @@ public class User implements JmixUserDetails, HasTimeZone {
     @Transient
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(final UUID id) {
-        this.id = id;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(final Integer version) {
-        this.version = version;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
     @Override
     public String getUsername() {
         return username;
-    }
-
-    public void setUsername(final String username) {
-        this.username = username;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(final Boolean active) {
-        this.active = active;
-    }
-
-    public void setPassword(final String password) {
-        this.password = password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(final String email) {
-        this.email = email;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(final String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(final String lastName) {
-        this.lastName = lastName;
     }
 
     @Override
@@ -168,9 +112,5 @@ public class User implements JmixUserDetails, HasTimeZone {
     @Override
     public boolean isAutoTimeZone() {
         return true;
-    }
-
-    public void setTimeZoneId(final String timeZoneId) {
-        this.timeZoneId = timeZoneId;
     }
 }

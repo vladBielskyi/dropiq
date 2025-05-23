@@ -12,7 +12,7 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "datasets", layout = MainView.class)
-@ViewController(id = "Dataset.list")
+@ViewController(id = "DataSet.list")
 @ViewDescriptor(path = "dataset-list-view.xml")
 @LookupComponent("datasetsDataGrid")
 @DialogMode(width = "80em", height = "70em")
@@ -100,9 +100,9 @@ public class DataSetListView extends StandardListView<DataSet> {
         if (selectedDataset != null) {
             // Navigate to products view filtered by dataset
             // Using proper Jmix navigation
-            getViewNavigators().detailView(selectedDataset)
-                    .withViewClass(DataSetDetailView.class)
-                    .navigate();
+//            getViewNavigators().detailView(selectedDataset)
+//                    .withViewClass(DataSetDetailView.class)
+//                    .navigate();
         }
     }
 }

@@ -5,6 +5,8 @@ import com.dropiq.admin.entity.DataSource;
 import com.dropiq.admin.model.DatasetStatus;
 import io.jmix.core.DataManager;
 import io.jmix.core.Id;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -95,7 +97,7 @@ public class DataSetService {
     /**
      * Get dataset by ID with ownership check
      */
-    public Optional<DataSet> getDataset(UUID id, String createdBy) {
+    public Optional<DataSet> getDataset(Long id, String createdBy) {
         try {
             Optional<DataSet> dataset = dataManager.load(DataSet.class)
                     .query("select d from Dataset d where d.id = :id and d.createdBy = :createdBy")
@@ -120,7 +122,7 @@ public class DataSetService {
     /**
      * Delete dataset
      */
-    public void deleteDataset(UUID id, String createdBy) {
+    public void deleteDataset(Long id, String createdBy) {
         Optional<DataSet> datasetOpt = getDataset(id, createdBy);
         if (datasetOpt.isPresent()) {
             DataSet dataset = datasetOpt.get();
@@ -174,7 +176,7 @@ public class DataSetService {
     /**
      * Get dataset statistics
      */
-    public DatasetStatistics getDatasetStatistics(UUID datasetId, String createdBy) {
+    public DatasetStatistics getDatasetStatistics(Long datasetId, String createdBy) {
         Optional<DataSet> datasetOpt = getDataset(datasetId, createdBy);
         if (!datasetOpt.isPresent()) {
             throw new RuntimeException("Dataset not found or access denied");
@@ -206,7 +208,7 @@ public class DataSetService {
     /**
      * Apply bulk operations to dataset products
      */
-    public void applyBulkOperation(UUID datasetId, String createdBy, BulkOperation operation) {
+    public void applyBulkOperation(Long datasetId, String createdBy, BulkOperation operation) {
         Optional<DataSet> datasetOpt = getDataset(datasetId, createdBy);
         if (!datasetOpt.isPresent()) {
             throw new RuntimeException("Dataset not found or access denied");
@@ -274,7 +276,7 @@ public class DataSetService {
     /**
      * Merge two datasets
      */
-    public DataSet mergeDatasets(UUID dataset1Id, UUID dataset2Id, String newName, String createdBy) {
+    public DataSet mergeDatasets(Long dataset1Id, Long dataset2Id, String newName, String createdBy) {
         Optional<DataSet> dataset1Opt = getDataset(dataset1Id, createdBy);
         Optional<DataSet> dataset2Opt = getDataset(dataset2Id, createdBy);
 
@@ -355,9 +357,10 @@ public class DataSetService {
         dataManager.save(dataset);
     }
 
-    // Data classes
+    @Getter
+    @Setter
     public static class DatasetStatistics {
-        private UUID datasetId;
+        private Long datasetId;
         private String datasetName;
         private Integer totalProducts;
         private Integer activeProducts;
@@ -366,36 +369,10 @@ public class DataSetService {
         private LocalDateTime lastSync;
         private LocalDateTime createdAt;
         private Map<String, Object> additionalMetrics = new HashMap<>();
-
-        // Getters and setters
-        public UUID getDatasetId() { return datasetId; }
-        public void setDatasetId(UUID datasetId) { this.datasetId = datasetId; }
-
-        public String getDatasetName() { return datasetName; }
-        public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
-
-        public Integer getTotalProducts() { return totalProducts; }
-        public void setTotalProducts(Integer totalProducts) { this.totalProducts = totalProducts; }
-
-        public Integer getActiveProducts() { return activeProducts; }
-        public void setActiveProducts(Integer activeProducts) { this.activeProducts = activeProducts; }
-
-        public Integer getOptimizedProducts() { return optimizedProducts; }
-        public void setOptimizedProducts(Integer optimizedProducts) { this.optimizedProducts = optimizedProducts; }
-
-        public DatasetStatus getStatus() { return status; }
-        public void setStatus(DatasetStatus status) { this.status = status; }
-
-        public LocalDateTime getLastSync() { return lastSync; }
-        public void setLastSync(LocalDateTime lastSync) { this.lastSync = lastSync; }
-
-        public LocalDateTime getCreatedAt() { return createdAt; }
-        public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-        public Map<String, Object> getAdditionalMetrics() { return additionalMetrics; }
-        public void setAdditionalMetrics(Map<String, Object> additionalMetrics) { this.additionalMetrics = additionalMetrics; }
     }
 
+    @Getter
+    @Setter
     public static class BulkOperation {
         public enum Type {
             ACTIVATE_ALL,
@@ -408,15 +385,5 @@ public class DataSetService {
         private Type type;
         private BigDecimal markupPercentage;
         private String categoryName;
-
-        // Getters and setters
-        public Type getType() { return type; }
-        public void setType(Type type) { this.type = type; }
-
-        public BigDecimal getMarkupPercentage() { return markupPercentage; }
-        public void setMarkupPercentage(BigDecimal markupPercentage) { this.markupPercentage = markupPercentage; }
-
-        public String getCategoryName() { return categoryName; }
-        public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
     }
 }
