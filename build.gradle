@@ -4,8 +4,14 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'com.dropiq'
-version = '0.0.1-SNAPSHOT'
+allprojects {
+    group = 'com.dropiq'
+    version = '0.0.1-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+}
 
 java {
     toolchain {
@@ -13,62 +19,39 @@ java {
     }
 }
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
-}
 
-repositories {
-    mavenCentral()
-}
+    dependencyManagement {
+        imports {
+            mavenBom("org.springframework.boot:spring-boot-dependencies:3.4.5")
+        }
+    }
 
-dependencies {
+    configurations {
+        compileOnly {
+            extendsFrom annotationProcessor
+        }
+    }
 
-    // Spring Boot Core
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    dependencies {
+        implementation 'org.slf4j:slf4j-api'
 
-    implementation 'org.springframework:spring-jdbc'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
-    // XML Processing
-    implementation 'org.springframework:spring-oxm'
-    implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
-    implementation 'com.sun.xml.bind:jaxb-impl'
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+    }
 
-    // Reactive Extensions
-    implementation 'io.projectreactor.netty:reactor-netty'
-    implementation 'io.projectreactor.addons:reactor-extra'
-
-    // JSON Processing
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-
-    // Utility Libraries
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    implementation 'org.slf4j:slf4j-api'
-    implementation 'org.apache.commons:commons-lang3:3.14.0'
-    implementation 'org.apache.commons:commons-collections4:4.4'
-    implementation 'com.google.guava:guava:33.0.0-jre'
-
-    // Cache
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
-    implementation 'com.github.ben-manes.caffeine:caffeine'
-
-    // Monitoring and Metrics
-    implementation 'io.micrometer:micrometer-registry-prometheus'
-
-    // Testing
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'io.projectreactor:reactor-test'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
 }
