@@ -15,8 +15,8 @@ public class UnifiedProduct {
     private Double price;                       // Product price
     private Integer stock;                      // Quantity in stock
     private boolean available;                  // Product availability
-    private String categoryId;                  // Category ID
-    private String categoryName;                // Category name
+    private String externalCategoryId;                  // Category ID
+    private String externalCategoryName;                // Category name
     private List<String> imageUrls;             // Product images
     private Map<String, String> attributes;     // Product attributes (size, color, etc.)
     private SourceType sourceType;                  // EASYDROP, MYDROP, etc.     // Human-readable source name

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,7 +29,8 @@ public class EasyDropHandler extends PlatformHandler {
     public List<UnifiedProduct> fetchProducts(String url, Map<String, String> headers) {
         try {
             String xmlContent = fetchXmlFromUrl(url, headers);
-            return parseProductsFromXml(xmlContent, url);
+            List<Category> categories = fetchCategories(xmlContent);
+            return parseProductsFromXml(xmlContent, url, categories);
         } catch (Exception e) {
             log.error("Error in fetchProducts: {}", e.getMessage(), e);
             return new ArrayList<>();
@@ -46,11 +48,18 @@ public class EasyDropHandler extends PlatformHandler {
         }
     }
 
+    @Override
+    public List<Category> fetchCategories(String xmlContent) {
+        return parseCategoriesFromXml(xmlContent);
+    }
+
     /**
      * Parse products from XML with error handling
      */
-    private List<UnifiedProduct> parseProductsFromXml(String xmlContent, String sourceUrl) {
+    private List<UnifiedProduct> parseProductsFromXml(String xmlContent, String sourceUrl, List<Category> categories) {
         List<UnifiedProduct> products = new ArrayList<>();
+        Map<String, String> categoryMap = categories.stream()
+                .collect(Collectors.toMap(Category::getId, Category::getName));
 
         try {
             Document doc = parseXml(xmlContent);
@@ -66,7 +75,7 @@ public class EasyDropHandler extends PlatformHandler {
             for (int i = 0; i < itemNodes.getLength(); i++) {
                 try {
                     Element element = (Element) itemNodes.item(i);
-                    UnifiedProduct product = parseProduct(element, sourceUrl);
+                    UnifiedProduct product = parseProduct(element, sourceUrl, categoryMap);
                     if (product != null) {
                         products.add(product);
                     }
@@ -85,7 +94,7 @@ public class EasyDropHandler extends PlatformHandler {
     /**
      * Parse a single product with robust error handling
      */
-    private UnifiedProduct parseProduct(Element element, String sourceUrl) {
+    private UnifiedProduct parseProduct(Element element, String sourceUrl, Map<String, String> categories) {
         try {
             UnifiedProduct product = new UnifiedProduct();
 
@@ -151,7 +160,12 @@ public class EasyDropHandler extends PlatformHandler {
             // Category ID
             String categoryId = getElementTextContent(element, "categoryId");
             if (categoryId != null && !categoryId.isEmpty()) {
-                product.setCategoryId(categoryId);
+                product.setExternalCategoryId(categoryId);
+            }
+
+            String categoryName = categories.get(categoryId);
+            if (categoryName != null & !categoryName.isEmpty()) {
+                product.setExternalCategoryName(categoryName);
             }
 
             // Stock quantity

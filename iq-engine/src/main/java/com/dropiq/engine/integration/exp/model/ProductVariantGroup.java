@@ -37,8 +37,8 @@ public class ProductVariantGroup {
         group.setGroupId(product.getGroupId());
         group.setName(product.getName());
         group.setDescription(product.getDescription());
-        group.setCategoryId(product.getCategoryId());
-        group.setCategoryName(product.getCategoryName());
+        group.setCategoryId(product.getExternalCategoryId());
+        group.setCategoryName(product.getExternalCategoryName());
         group.getImageUrls().addAll(product.getImageUrls());
         group.getVariants().add(product);
         group.getSourcePlatforms().add(product.getSourceType());

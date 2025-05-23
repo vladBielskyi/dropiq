@@ -1,8 +1,10 @@
 package com.dropiq.engine.integration.exp.model;
 
 public enum SourceType {
-    EASYDROP,
     MYDROP,
-    CUSTOM,
-    MANUAL
+    EASYDROP,
+    CSV_FILE,
+    XML_FILE,
+    CUSTOM_API,
+    MANUAL_ENTRY
 }

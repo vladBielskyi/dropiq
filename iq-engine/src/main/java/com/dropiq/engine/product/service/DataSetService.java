@@ -9,6 +9,7 @@ import com.dropiq.engine.product.entity.Product;
 import com.dropiq.engine.product.model.DataSetFilter;
 import com.dropiq.engine.product.model.DataSetStatistics;
 import com.dropiq.engine.product.model.DataSetStatus;
+import com.dropiq.engine.product.model.DataSetType;
 import com.dropiq.engine.product.repository.DataSetRepository;
 import com.dropiq.engine.product.support.ProductMapper;
 import lombok.RequiredArgsConstructor;
@@ -220,7 +221,7 @@ public class DataSetService {
         // Calculate statistics
         Set<Product> products = dataset.getProducts();
 
-        stats.setAvailableProducts((int) products.stream().mapToLong(p -> p.isAvailable() ? 1 : 0).sum());
+        stats.setAvailableProducts((int) products.stream().mapToLong(p -> p.getAvailable() ? 1 : 0).sum());
         stats.setUnavailableProducts(stats.getTotalProducts() - stats.getAvailableProducts());
 
         // Group by source platform
@@ -230,14 +231,14 @@ public class DataSetService {
 
         // Group by category
         Map<String, Long> categoryStats = products.stream()
-                .filter(p -> p.getCategoryId() != null)
-                .collect(Collectors.groupingBy(Product::getCategoryId, Collectors.counting()));
+                .filter(p -> p.getExternalCategoryId() != null)
+                .collect(Collectors.groupingBy(Product::getExternalCategoryId, Collectors.counting()));
         stats.setProductsByCategory(categoryStats);
 
         // Price statistics
         OptionalDouble avgPrice = products.stream()
-                .filter(p -> p.getPrice() != null && p.getPrice() > 0)
-                .mapToDouble(Product::getPrice)
+                .filter(p -> p.getSellingPrice() != null && p.getSellingPrice().intValue() > 0)
+                .mapToDouble(p -> p.getSellingPrice().doubleValue())
                 .average();
         stats.setAveragePrice(avgPrice.orElse(0.0));
 
@@ -263,20 +264,22 @@ public class DataSetService {
             }
         }
 
-        if (filter.getMinPrice() != null && (product.getPrice() == null || product.getPrice() < filter.getMinPrice())) {
+        if (filter.getMinPrice() != null && (product.getSellingPrice() == null || product.getSellingPrice().intValue()
+                < filter.getMinPrice())) {
             return false;
         }
 
-        if (filter.getMaxPrice() != null && (product.getPrice() == null || product.getPrice() > filter.getMaxPrice())) {
+        if (filter.getMaxPrice() != null && (product.getSellingPrice() == null || product.getSellingPrice().intValue()
+                > filter.getMaxPrice())) {
             return false;
         }
 
-        if (filter.getAvailableOnly() != null && filter.getAvailableOnly() && !product.isAvailable()) {
+        if (filter.getAvailableOnly() != null && filter.getAvailableOnly() && !product.getAvailable()) {
             return false;
         }
 
         if (filter.getCategoryIds() != null && !filter.getCategoryIds().isEmpty()) {
-            if (product.getCategoryId() == null || !filter.getCategoryIds().contains(product.getCategoryId())) {
+            if (product.getExternalCategoryId() == null || !filter.getCategoryIds().contains(product.getExternalCategoryId())) {
                 return false;
             }
         }

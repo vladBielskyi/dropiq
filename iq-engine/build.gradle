@@ -47,7 +47,6 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
     // Testing Database (H2 for in-memory tests)
-    testImplementation 'com.h2database:h2'
 }
 
 tasks.register("prepareKotlinBuildScriptModel"){}

@@ -5,13 +5,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.converter.StringHttpMessageConverter;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class RestTemplateConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate(clientHttpRequestFactory());
+        RestTemplate restTemplate = new RestTemplate(clientHttpRequestFactory());
+        // Ensure UTF-8 is used for String responses
+        restTemplate.getMessageConverters().removeIf(c -> c instanceof StringHttpMessageConverter);
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+        return restTemplate;
     }
 
     @Bean

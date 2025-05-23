@@ -4,6 +4,7 @@ import com.dropiq.engine.integration.exp.model.UnifiedProduct;
 import com.dropiq.engine.product.entity.Product;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,14 +27,15 @@ public class ProductMapper {
         product.setGroupId(unifiedProduct.getGroupId());
         product.setName(unifiedProduct.getName());
         product.setDescription(unifiedProduct.getDescription());
-        product.setPrice(unifiedProduct.getPrice());
+        product.setOriginalPrice(BigDecimal.valueOf(unifiedProduct.getPrice()));
         product.setStock(unifiedProduct.getStock());
         product.setAvailable(unifiedProduct.isAvailable());
-        product.setCategoryId(unifiedProduct.getCategoryId());
-        product.setCategoryName(unifiedProduct.getCategoryName());
+        product.setExternalCategoryId(unifiedProduct.getExternalCategoryId());
+        product.setExternalCategoryName(unifiedProduct.getExternalCategoryName());
         product.setSourceType(unifiedProduct.getSourceType());
         product.setSourceUrl(unifiedProduct.getSourceUrl());
-        product.setLastUpdated(unifiedProduct.getLastUpdated());
+        product.setUpdatedAt(unifiedProduct.getLastUpdated());
+        product.setLastSync(LocalDateTime.now());
 
         // Copy collections
         if (unifiedProduct.getImageUrls() != null) {
@@ -62,14 +64,14 @@ public class ProductMapper {
         unifiedProduct.setGroupId(product.getGroupId());
         unifiedProduct.setName(product.getName());
         unifiedProduct.setDescription(product.getDescription());
-        unifiedProduct.setPrice(product.getPrice());
+        unifiedProduct.setPrice(product.getOriginalPrice().doubleValue());
         unifiedProduct.setStock(product.getStock());
-        unifiedProduct.setAvailable(product.isAvailable());
-        unifiedProduct.setCategoryId(product.getCategoryId());
-        unifiedProduct.setCategoryName(product.getCategoryName());
+        unifiedProduct.setAvailable(product.getAvailable());
+        unifiedProduct.setExternalCategoryId(product.getExternalCategoryId());
+        unifiedProduct.setExternalCategoryName(product.getExternalCategoryName());
         unifiedProduct.setSourceType(product.getSourceType());
         unifiedProduct.setSourceUrl(product.getSourceUrl());
-        unifiedProduct.setLastUpdated(product.getLastUpdated());
+        unifiedProduct.setLastUpdated(product.getUpdatedAt());
 
         // Copy collections
         if (product.getImageUrls() != null) {
@@ -148,14 +150,14 @@ public class ProductMapper {
         existingProduct.setGroupId(source.getGroupId());
         existingProduct.setName(source.getName());
         existingProduct.setDescription(source.getDescription());
-        existingProduct.setPrice(source.getPrice());
+        existingProduct.setOriginalPrice(BigDecimal.valueOf(source.getPrice()));
         existingProduct.setStock(source.getStock());
         existingProduct.setAvailable(source.isAvailable());
-        existingProduct.setCategoryId(source.getCategoryId());
-        existingProduct.setCategoryName(source.getCategoryName());
+        existingProduct.setExternalCategoryId(source.getExternalCategoryId());
+        existingProduct.setExternalCategoryName(source.getExternalCategoryName());
         existingProduct.setSourceType(source.getSourceType());
         existingProduct.setSourceUrl(source.getSourceUrl());
-        existingProduct.setLastUpdated(LocalDateTime.now());
+        existingProduct.setUpdatedAt(LocalDateTime.now());
 
         // Update collections
         if (source.getImageUrls() != null) {
@@ -181,11 +183,11 @@ public class ProductMapper {
         existingUnifiedProduct.setGroupId(source.getGroupId());
         existingUnifiedProduct.setName(source.getName());
         existingUnifiedProduct.setDescription(source.getDescription());
-        existingUnifiedProduct.setPrice(source.getPrice());
+        existingUnifiedProduct.setPrice(source.getOriginalPrice().doubleValue());
         existingUnifiedProduct.setStock(source.getStock());
-        existingUnifiedProduct.setAvailable(source.isAvailable());
-        existingUnifiedProduct.setCategoryId(source.getCategoryId());
-        existingUnifiedProduct.setCategoryName(source.getCategoryName());
+        existingUnifiedProduct.setAvailable(source.getAvailable());
+        existingUnifiedProduct.setExternalCategoryId(source.getExternalCategoryId());
+        existingUnifiedProduct.setExternalCategoryName(source.getExternalCategoryName());
         existingUnifiedProduct.setSourceType(source.getSourceType());
         existingUnifiedProduct.setSourceUrl(source.getSourceUrl());
         existingUnifiedProduct.setLastUpdated(LocalDateTime.now());
@@ -213,11 +215,11 @@ public class ProductMapper {
         Product product = new Product();
         product.setExternalId(unifiedProduct.getExternalId());
         product.setName(unifiedProduct.getName());
-        product.setPrice(unifiedProduct.getPrice());
+        product.setOriginalPrice(BigDecimal.valueOf(unifiedProduct.getPrice()));
         product.setStock(unifiedProduct.getStock());
         product.setAvailable(unifiedProduct.isAvailable());
         product.setSourceType(unifiedProduct.getSourceType());
-        product.setLastUpdated(unifiedProduct.getLastUpdated());
+        product.setUpdatedAt(unifiedProduct.getLastUpdated());
 
         return product;
     }

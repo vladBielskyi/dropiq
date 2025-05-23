@@ -19,6 +19,9 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +75,7 @@ public abstract class PlatformHandler {
 
                 // Wait before retry
                 try {
-                    Thread.sleep(2000 * currentRetry); // Exponential backoff
+                    Thread.sleep(2000L * currentRetry); // Exponential backoff
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Thread interrupted while waiting for retry", ie);
@@ -94,11 +97,6 @@ public abstract class PlatformHandler {
             }
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            // Disable external entity resolution for security
-            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-
             DocumentBuilder builder = factory.newDocumentBuilder();
             return builder.parse(new ByteArrayInputStream(xmlContent.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
@@ -188,12 +186,10 @@ public abstract class PlatformHandler {
                         return value != null ? value.trim() : null;
                     }
                 } catch (Exception e) {
-                    // Skip problematic child nodes
                     log.debug("Error processing child node at index {} for tag {}: {}", i, tagName, e.getMessage());
                 }
             }
 
-            // Fall back to regular text content
             try {
                 String content = node.getTextContent();
                 return content != null ? content.trim() : null;
@@ -216,6 +212,8 @@ public abstract class PlatformHandler {
      * Abstract method to fetch categories from a platform
      */
     public abstract List<Category> fetchCategories(String url, Map<String, String> headers);
+
+    public abstract List<Category> fetchCategories(String xmlContent);
 
     /**
      * Get source type

@@ -52,8 +52,7 @@ public class UnifiedProductService {
 
         for (DataSourceConfig config : configs) {
             try {
-                SourceType platformType = SourceType.valueOf(config.getPlatformType().toUpperCase());
-                PlatformHandler handler = platformHandlers.get(platformType);
+                PlatformHandler handler = platformHandlers.get(config.getPlatformType());
 
                 if (handler == null) {
                     log.warn("Unsupported platform: {}", config.getPlatformType());
@@ -92,8 +91,8 @@ public class UnifiedProductService {
                 UnifiedProduct firstProduct = productList.get(0);
                 variantGroup.setName(firstProduct.getName());
                 variantGroup.setDescription(firstProduct.getDescription());
-                variantGroup.setCategoryId(firstProduct.getCategoryId());
-                variantGroup.setCategoryName(firstProduct.getCategoryName());
+                variantGroup.setCategoryId(firstProduct.getExternalCategoryId());
+                variantGroup.setCategoryName(firstProduct.getExternalCategoryName());
                 variantGroup.getImageUrls().addAll(firstProduct.getImageUrls());
             }
 
@@ -148,8 +147,8 @@ public class UnifiedProductService {
                     UnifiedProduct firstProduct = productList.get(0);
                     group.setName(firstProduct.getName());
                     group.setDescription(firstProduct.getDescription());
-                    group.setCategoryId(firstProduct.getCategoryId());
-                    group.setCategoryName(firstProduct.getCategoryName());
+                    group.setCategoryId(firstProduct.getExternalCategoryId());
+                    group.setCategoryName(firstProduct.getExternalCategoryName());
                     group.getImageUrls().addAll(firstProduct.getImageUrls());
                 }
 
@@ -173,7 +172,7 @@ public class UnifiedProductService {
         List<UnifiedProduct> allProducts = fetchProductsFromPlatform(platformType, url, headers);
 
         return allProducts.stream()
-                .filter(product -> categoryId.equals(product.getCategoryId()))
+                .filter(product -> categoryId.equals(product.getExternalCategoryId()))
                 .collect(Collectors.toList());
     }
 
@@ -209,8 +208,8 @@ public class UnifiedProductService {
 
         // Group by category
         Map<String, Long> categoryStats = allProducts.stream()
-                .filter(product -> product.getCategoryId() != null)
-                .collect(Collectors.groupingBy(UnifiedProduct::getCategoryId, Collectors.counting()));
+                .filter(product -> product.getExternalCategoryId() != null)
+                .collect(Collectors.groupingBy(UnifiedProduct::getExternalCategoryId, Collectors.counting()));
         stats.put("productsByCategory", categoryStats);
 
         // Available vs unavailable

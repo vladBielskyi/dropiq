@@ -155,11 +155,11 @@ public class UnifiedProductServiceTest {
 
         // Given: Configuration for both platforms
         DataSourceConfig easyDropConfig = new DataSourceConfig();
-        easyDropConfig.setPlatformType("EASYDROP");
+        easyDropConfig.setPlatformType(SourceType.EASYDROP);
         easyDropConfig.setUrl(EASYDROP_URL);
 
         DataSourceConfig myDropConfig = new DataSourceConfig();
-        myDropConfig.setPlatformType("MYDROP");
+        myDropConfig.setPlatformType(SourceType.MYDROP);
         myDropConfig.setUrl(MYDROP_URL);
 
         List<DataSourceConfig> configs = List.of(easyDropConfig, myDropConfig);
@@ -278,8 +278,8 @@ public class UnifiedProductServiceTest {
         if (!allProducts.isEmpty()) {
             // Find a category that has products
             String categoryId = allProducts.stream()
-                    .filter(p -> p.getCategoryId() != null)
-                    .map(UnifiedProduct::getCategoryId)
+                    .filter(p -> p.getExternalCategoryId() != null)
+                    .map(UnifiedProduct::getExternalCategoryId)
                     .findFirst()
                     .orElse(null);
 
@@ -298,7 +298,7 @@ public class UnifiedProductServiceTest {
 
                 // Verify all products belong to the category
                 categoryProducts.forEach(product -> {
-                    assertEquals(categoryId, product.getCategoryId(),
+                    assertEquals(categoryId, product.getExternalCategoryId(),
                             "All products should belong to the specified category");
                 });
             } else {
@@ -317,7 +317,7 @@ public class UnifiedProductServiceTest {
         // When: Using invalid platform type
         try {
             List<UnifiedProduct> products = service.fetchProductsFromPlatform(
-                    SourceType.CUSTOM, // This should not have a handler
+                    SourceType.XML_FILE, // This should not have a handler
                     "http://invalid-url.com",
                     Map.of()
             );
@@ -338,11 +338,11 @@ public class UnifiedProductServiceTest {
     // Helper method to create test configurations
     private List<DataSourceConfig> createTestConfigs() {
         DataSourceConfig easyDropConfig = new DataSourceConfig();
-        easyDropConfig.setPlatformType("EASYDROP");
+        easyDropConfig.setPlatformType(SourceType.EASYDROP);
         easyDropConfig.setUrl(EASYDROP_URL);
 
         DataSourceConfig myDropConfig = new DataSourceConfig();
-        myDropConfig.setPlatformType("MYDROP");
+        myDropConfig.setPlatformType(SourceType.MYDROP);
         myDropConfig.setUrl(MYDROP_URL);
 
         return List.of(easyDropConfig, myDropConfig);
