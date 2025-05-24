@@ -11,8 +11,14 @@
             <loader id="dataSetDl"/>
         </instance>
 
-        <collection id="treeItemsDc"
-                    class="com.dropiq.admin.model.ProductTreeItem">
+        <collection id="productsDc"
+                    class="com.dropiq.admin.entity.Product">
+            <fetchPlan extends="_base"/>
+            <loader id="productsDl" readOnly="true">
+                <query>
+                    <![CDATA[select p from Product p join p.datasets d where d.id = :datasetId order by p.sourceType, p.externalCategoryName, p.groupId, p.name]]>
+                </query>
+            </loader>
         </collection>
     </data>
 
@@ -26,7 +32,7 @@
     </actions>
 
     <layout>
-        <vbox width="100%" height="100%" spacing="true">
+        <vbox width="100%" height="100%" spacing="true" classNames="dataset-detail-view">
             <tabSheet id="tabSheet" width="100%" height="100%">
 
                 <!-- Dataset Info Tab -->
@@ -68,13 +74,15 @@
 
                 <!-- Products Tab -->
                 <tab id="productsTab" label="Products">
-                    <vbox width="100%" height="100%" spacing="true" padding="true">
+                    <vbox width="100%" height="100%" spacing="true" padding="true" classNames="products-tab">
 
-                        <!-- Filter Toggle and Tree Controls -->
-                        <hbox spacing="true" alignItems="CENTER">
+                        <!-- Filter Toggle and Controls -->
+                        <hbox spacing="true" alignItems="CENTER" classNames="filters-toolbar">
                             <button id="toggleFiltersButton"
                                     text="Show Filters"
-                                    icon="ANGLE_DOWN"/>
+                                    icon="ANGLE_DOWN"
+                                    themeNames="tertiary"/>
+                            <span text="|" classNames="separator"/>
                             <button id="expandAllButton"
                                     text="Expand All"
                                     icon="PLUS"
@@ -83,10 +91,12 @@
                                     text="Collapse All"
                                     icon="MINUS"
                                     themeNames="tertiary"/>
+                            <span text="|" classNames="separator"/>
+                            <span text="5140 products" id="productCountLabel" classNames="product-count"/>
                         </hbox>
 
                         <!-- Filters Container -->
-                        <div id="filtersContainer" visible="false">
+                        <div id="filtersContainer" visible="false" classNames="filters-panel">
                             <vbox spacing="true" padding="true">
                                 <!-- Basic Text Filters -->
                                 <hbox spacing="true" alignItems="END">
@@ -108,21 +118,23 @@
                                 <hbox spacing="true" alignItems="END">
                                     <select id="sourceTypeFilter"
                                             label="Source Type"
-                                            width="200px"/>
+                                            width="200px"
+                                            placeholder="All sources"/>
                                     <select id="statusFilter"
                                             label="Status"
-                                            width="200px"/>
+                                            width="200px"
+                                            placeholder="All statuses"/>
                                 </hbox>
 
                                 <!-- Price Filters -->
                                 <hbox spacing="true" alignItems="END">
                                     <textField id="minPriceFilter"
                                                label="Min Price"
-                                               placeholder="Min price..."
+                                               placeholder="0.00"
                                                width="150px"/>
                                     <textField id="maxPriceFilter"
                                                label="Max Price"
-                                               placeholder="Max price..."
+                                               placeholder="9999.99"
                                                width="150px"/>
                                 </hbox>
 
@@ -130,11 +142,11 @@
                                 <hbox spacing="true" alignItems="END">
                                     <textField id="minStockFilter"
                                                label="Min Stock"
-                                               placeholder="Min stock..."
+                                               placeholder="0"
                                                width="150px"/>
                                     <textField id="maxStockFilter"
                                                label="Max Stock"
-                                               placeholder="Max stock..."
+                                               placeholder="999"
                                                width="150px"/>
                                     <checkbox id="availableOnlyFilter"
                                               label="Available Only"/>
@@ -164,19 +176,48 @@
                             </vbox>
                         </div>
 
-                        <!-- Tree Grid for Products -->
-                        <treeDataGrid id="productsTreeGrid"
-                                      width="100%"
-                                      height="100%"
-                                      dataContainer="treeItemsDc"
-                                      hierarchyProperty="children"
-                                      selectionMode="MULTI"
-                                      columnReorderingAllowed="true"
-                                      detailsVisibleOnClick="true">
-                        </treeDataGrid>
+                        <!-- Products DataGrid -->
+                        <dataGrid id="productsDataGrid"
+                                  width="100%"
+                                  height="100%"
+                                  dataContainer="productsDc"
+                                  selectionMode="MULTI"
+                                  columnReorderingAllowed="true"
+                                  classNames="products-grid">
+                            <columns resizable="true">
+                                <column property="sourceType"
+                                        header="Source"
+                                        width="100px"/>
+                                <column property="externalCategoryName"
+                                        header="Category"
+                                        width="150px"/>
+                                <column property="groupId"
+                                        header="Group"
+                                        width="120px"/>
+                                <column property="name"
+                                        header="Product Name"
+                                        width="300px"
+                                        flexGrow="1"/>
+                                <column key="image"
+                                        header="Image"
+                                        width="80px"/>
+                                <column property="originalPrice"
+                                        header="Price"
+                                        width="100px"/>
+                                <column property="stock"
+                                        header="Stock"
+                                        width="80px"/>
+                                <column property="status"
+                                        header="Status"
+                                        width="100px"/>
+                                <column property="available"
+                                        header="Available"
+                                        width="80px"/>
+                            </columns>
+                        </dataGrid>
 
                         <!-- Product Action Buttons -->
-                        <hbox spacing="true" alignItems="CENTER">
+                        <hbox spacing="true" alignItems="CENTER" classNames="action-buttons">
                             <button id="editProductButton"
                                     text="Edit Product"
                                     icon="EDIT"
@@ -187,13 +228,24 @@
                                     icon="ARCHIVE"
                                     enabled="false"
                                     themeNames="error"/>
+                            <span text="|" classNames="separator"/>
+                            <button id="bulkPriceUpdateButton"
+                                    text="Bulk Price Update"
+                                    icon="DOLLAR"
+                                    enabled="false"
+                                    themeNames="tertiary"/>
+                            <button id="exportSelectedButton"
+                                    text="Export Selected"
+                                    icon="DOWNLOAD"
+                                    enabled="false"
+                                    themeNames="success"/>
                         </hbox>
                     </vbox>
                 </tab>
             </tabSheet>
 
             <!-- Action Buttons -->
-            <hbox spacing="true" padding="true">
+            <hbox spacing="true" padding="true" classNames="main-actions">
                 <button id="saveAndCloseButton" action="saveAction" themeNames="primary"/>
                 <button id="closeButton" action="closeAction"/>
             </hbox>

@@ -42,14 +42,10 @@ public class UnifiedProductServiceTest {
         easyConfig.setPlatformType(SourceType.EASYDROP);
         easyConfig.setHeaders(Map.of());
 
-        DataSourceConfig myConfig = new DataSourceConfig();
-        easyConfig.setUrl(MYDROP_URL);
-        easyConfig.setPlatformType(SourceType.MYDROP);
-        easyConfig.setHeaders(Map.of());
 
         DataSet dataSet =
                 dataSetService
-                        .createDatasetFromSources("Test", "Test", "Vlad", List.of(easyConfig, myConfig));
+                        .createDatasetFromSources("Test 3", "Test", "Vlad", List.of(easyConfig));
 
         System.out.println(dataSetService.getDatasetStatistics(dataSet.getId(), "vlad"));
 

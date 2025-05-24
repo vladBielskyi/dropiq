@@ -4,7 +4,6 @@ import com.dropiq.admin.entity.DataSet;
 import com.dropiq.admin.entity.Product;
 import com.dropiq.admin.model.ProductFilterCriteria;
 import com.dropiq.admin.model.ProductStatus;
-import com.dropiq.admin.model.ProductTreeItem;
 import com.dropiq.admin.model.SourceType;
 import com.dropiq.admin.service.DataSetService;
 import com.dropiq.admin.view.main.MainView;
@@ -13,6 +12,7 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -23,11 +23,12 @@ import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.checkbox.JmixCheckbox;
-import io.jmix.flowui.component.grid.TreeDataGrid;
+import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.select.JmixSelect;
 import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
+import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -42,7 +43,7 @@ import java.util.stream.Collectors;
 public class DataSetDetailView extends StandardDetailView<DataSet> {
 
     @ViewComponent
-    private TreeDataGrid<ProductTreeItem> productsTreeGrid;
+    private DataGrid<Product> productsDataGrid;
 
     @ViewComponent
     private JmixButton archiveSelectedButton;
@@ -57,9 +58,21 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     private JmixButton toggleFiltersButton;
 
     @ViewComponent
+    private JmixButton bulkPriceUpdateButton;
+
+    @ViewComponent
+    private JmixButton exportSelectedButton;
+
+    @ViewComponent
     private Div filtersContainer;
 
+    @ViewComponent
+    private Span productCountLabel;
+
     // Basic filters
+    @ViewComponent
+    private JmixSelect<SourceType> sourceTypeFilter;
+
     @ViewComponent
     private TypedTextField<String> nameFilter;
 
@@ -69,21 +82,18 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     @ViewComponent
     private TypedTextField<String> descriptionFilter;
 
-    // Advanced filters - використовуємо JmixSelect замість JmixMultiSelect
     @ViewComponent
-    private JmixSelect<SourceType> sourceTypeFilter;
+    private TypedTextField<String> minPriceFilter;
 
     @ViewComponent
-    private TypedTextField<BigDecimal> minPriceFilter;
+    private TypedTextField<String> maxPriceFilter;
 
     @ViewComponent
-    private TypedTextField<BigDecimal> maxPriceFilter;
+    private TypedTextField<String> minStockFilter;
 
     @ViewComponent
-    private TypedTextField<Integer> minStockFilter;
+    private TypedTextField<String> maxStockFilter;
 
-    @ViewComponent
-    private TypedTextField<Integer> maxStockFilter;
 
     @ViewComponent
     private JmixCheckbox availableOnlyFilter;
@@ -107,13 +117,10 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     private JmixButton clearFiltersButton;
 
     @ViewComponent
-    private JmixButton expandAllButton;
+    private CollectionContainer<Product> productsDc;
 
     @ViewComponent
-    private JmixButton collapseAllButton;
-
-    @ViewComponent
-    private CollectionContainer<ProductTreeItem> treeItemsDc;
+    private CollectionLoader<Product> productsDl;
 
     @Autowired
     private DataSetService dataSetService;
@@ -131,58 +138,31 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     private DialogWindows dialogWindows;
 
     private List<Product> allProducts = new ArrayList<>();
-    private List<ProductTreeItem> treeItems = new ArrayList<>();
     private boolean filtersVisible = false;
 
     @Subscribe
     public void onReady(ReadyEvent event) {
-        setupTreeGrid();
+        setupDataGrid();
         setupFilters();
         updateButtonStates();
         loadProducts();
     }
 
-    private void setupTreeGrid() {
-        // Правильний спосіб для Jmix 2.5 - додаємо колонки без ComponentRenderer для hierarchy
-        productsTreeGrid.addHierarchyColumn(ProductTreeItem::getDisplayName)
-                .setHeader("Name / Group")
-                .setWidth("300px")
-                .setFlexGrow(1);
+    private void setupDataGrid() {
+        // Set up image column renderer
+        productsDataGrid.getColumnByKey("image").setRenderer(new ComponentRenderer<>(this::createImageComponent));
 
-        // Додаємо інші колонки з ComponentRenderer
-        productsTreeGrid.addColumn(new ComponentRenderer<>(this::createImageComponent))
-                .setHeader("Image")
-                .setWidth("80px")
-                .setFlexGrow(0);
-
-        productsTreeGrid.addColumn(new ComponentRenderer<>(this::createPriceComponent))
-                .setHeader("Price")
-                .setWidth("100px")
-                .setFlexGrow(0);
-
-        productsTreeGrid.addColumn(new ComponentRenderer<>(this::createStockComponent))
-                .setHeader("Stock")
-                .setWidth("80px")
-                .setFlexGrow(0);
-
-        productsTreeGrid.addColumn(new ComponentRenderer<>(this::createStatusComponent))
-                .setHeader("Status")
-                .setWidth("100px")
-                .setFlexGrow(0);
-
-        productsTreeGrid.addColumn(new ComponentRenderer<>(this::createSourceComponent))
-                .setHeader("Source")
-                .setWidth("100px")
-                .setFlexGrow(0);
+        // Set up grouping by source and category
+        productsDataGrid.setDetailsVisibleOnClick(false);
 
         // Selection listener
-        productsTreeGrid.addSelectionListener(e -> updateButtonStates());
+        productsDataGrid.addSelectionListener(e -> updateButtonStates());
 
         // Double-click listener
-        productsTreeGrid.addItemDoubleClickListener(e -> {
-            ProductTreeItem item = e.getItem();
-            if (item != null && item.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT) {
-                openProductEditor(item.getProduct());
+        productsDataGrid.addItemDoubleClickListener(e -> {
+            Product product = e.getItem();
+            if (product != null) {
+                openProductEditor(product);
             }
         });
     }
@@ -203,79 +183,17 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
         toggleFiltersButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     }
 
-    private Component createImageComponent(ProductTreeItem item) {
-        if (item.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT) {
-            Product product = item.getProduct();
-            if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
-                Image image = new Image(product.getImageUrls().get(0), "Product");
-                image.setWidth("50px");
-                image.setHeight("50px");
-                image.addClassName("product-image");
-                return image;
-            }
+    private Component createImageComponent(Product product) {
+        if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
+            Image image = new Image(product.getImageUrls().get(0), "Product");
+            image.setWidth("50px");
+            image.setHeight("50px");
+            image.addClassName("product-image");
+            image.getStyle().set("object-fit", "cover");
+            image.getStyle().set("border-radius", "4px");
+            return image;
         }
-        return new Span("");
-    }
-
-    private Component createPriceComponent(ProductTreeItem item) {
-        if (item.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT) {
-            Product product = item.getProduct();
-            if (product.getOriginalPrice() != null) {
-                return new Span(String.format("%.2f UAH", product.getOriginalPrice()));
-            }
-        } else if (item.getTotalValue() != null) {
-            return new Span(String.format("%.2f UAH", item.getTotalValue()));
-        }
-        return new Span("");
-    }
-
-    private Component createStockComponent(ProductTreeItem item) {
-        if (item.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT) {
-            Product product = item.getProduct();
-            Span stockSpan = new Span(String.valueOf(product.getStock()));
-            if (product.getStock() == 0) {
-                stockSpan.addClassName("stock-zero");
-            } else if (product.getStock() < 10) {
-                stockSpan.addClassName("stock-low");
-            }
-            return stockSpan;
-        } else if (item.getProductCount() > 0) {
-            return new Span(item.getProductCount() + " items");
-        }
-        return new Span("");
-    }
-
-    private Component createStatusComponent(ProductTreeItem item) {
-        if (item.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT) {
-            Product product = item.getProduct();
-            Span badge = new Span(product.getStatus().name());
-            badge.addClassName("status-badge");
-
-            switch (product.getStatus()) {
-                case ACTIVE:
-                    badge.addClassName("status-active");
-                    break;
-                case INACTIVE:
-                    badge.addClassName("status-inactive");
-                    break;
-                case DRAFT:
-                    badge.addClassName("status-draft");
-                    break;
-                default:
-                    badge.addClassName("status-other");
-            }
-            return badge;
-        }
-        return new Span("");
-    }
-
-    private Component createSourceComponent(ProductTreeItem item) {
-        if (item.getSourceType() != null) {
-            Span sourceSpan = new Span(item.getSourceType().name());
-            sourceSpan.addClassName("source-badge");
-            return sourceSpan;
-        }
-        return new Span("");
+        return new Span("No image");
     }
 
     @Subscribe("toggleFiltersButton")
@@ -302,34 +220,6 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
         clearAllFilters();
     }
 
-    @Subscribe("expandAllButton")
-    public void onExpandAllButtonClick(ClickEvent<JmixButton> event) {
-        expandAll(treeItems);
-    }
-
-    @Subscribe("collapseAllButton")
-    public void onCollapseAllButtonClick(ClickEvent<JmixButton> event) {
-        collapseAll(treeItems);
-    }
-
-    private void expandAll(List<ProductTreeItem> items) {
-        for (ProductTreeItem item : items) {
-            if (item.hasChildren()) {
-                productsTreeGrid.expand(item);
-                expandAll(item.getChildren());
-            }
-        }
-    }
-
-    private void collapseAll(List<ProductTreeItem> items) {
-        for (ProductTreeItem item : items) {
-            if (item.hasChildren()) {
-                productsTreeGrid.collapse(item);
-                collapseAll(item.getChildren());
-            }
-        }
-    }
-
     @Subscribe("syncDatasetButton")
     public void onSyncDatasetButtonClick(ClickEvent<JmixButton> event) {
         DataSet dataSet = getEditedEntity();
@@ -354,19 +244,16 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
 
     @Subscribe("editProductButton")
     public void onEditProductButtonClick(ClickEvent<JmixButton> event) {
-        ProductTreeItem selected = productsTreeGrid.getSingleSelectedItem();
-        if (selected != null && selected.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT) {
-            openProductEditor(selected.getProduct());
+        Product selected = productsDataGrid.getSingleSelectedItem();
+        if (selected != null) {
+            openProductEditor(selected);
         }
     }
 
     @Subscribe("archiveSelectedButton")
     public void onArchiveSelectedButtonClick(ClickEvent<JmixButton> event) {
-        Set<ProductTreeItem> selectedItems = productsTreeGrid.getSelectedItems();
-        List<Product> productsToArchive = selectedItems.stream()
-                .filter(item -> item.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT)
-                .map(ProductTreeItem::getProduct)
-                .collect(Collectors.toList());
+        Set<Product> selectedItems = productsDataGrid.getSelectedItems();
+        List<Product> productsToArchive = new ArrayList<>(selectedItems);
 
         if (!productsToArchive.isEmpty()) {
             try {
@@ -401,54 +288,291 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     private void loadProducts() {
         DataSet dataSet = getEditedEntity();
         if (dataSet != null && dataSet.getId() != null) {
-            String query = "select p from Product p join p.datasets d where d.id = :datasetId order by p.sourceType, p.groupId, p.name";
+            productsDl.setParameter("datasetId", dataSet.getId());
+            productsDl.load();
 
-            allProducts = dataManager.load(Product.class)
-                    .query(query)
-                    .parameter("datasetId", dataSet.getId())
-                    .list();
+            allProducts = new ArrayList<>(productsDc.getItems());
+            updateProductCount(allProducts.size());
 
-            buildTreeStructure(allProducts);
+            System.out.println("Loaded " + allProducts.size() + " products for dataset");
         }
     }
 
     private void applyFilters() {
-        ProductFilterCriteria criteria = buildFilterCriteria();
-        List<Product> filteredProducts = filterProducts(allProducts, criteria);
-        buildTreeStructure(filteredProducts);
+        try {
+            ProductFilterCriteria criteria = buildFilterCriteria();
 
-        notifications.create("Applied filters, showing " + filteredProducts.size() + " products")
-                .withType(Notifications.Type.DEFAULT)
-                .show();
+            // Validate criteria
+            if (criteria.isEmpty()) {
+                // Show all products if no filters applied
+                productsDc.setItems(allProducts);
+                updateProductCount(allProducts.size());
+                notifications.create("No filters applied - showing all " + allProducts.size() + " products")
+                        .withType(Notifications.Type.DEFAULT)
+                        .show();
+                return;
+            }
+
+            // Debug logging
+            System.out.println("Applying filters to " + allProducts.size() + " products");
+            System.out.println("Filter criteria: " + criteriaToString(criteria));
+
+            List<Product> filteredProducts = filterProducts(allProducts, criteria);
+
+            productsDc.setItems(filteredProducts);
+            updateProductCount(filteredProducts.size());
+
+            String message = "Applied filters: showing " + filteredProducts.size() + " of " + allProducts.size() + " products";
+            notifications.create(message)
+                    .withType(filteredProducts.isEmpty() ? Notifications.Type.WARNING : Notifications.Type.SUCCESS)
+                    .show();
+
+            System.out.println("Filtered down to " + filteredProducts.size() + " products");
+
+        } catch (Exception e) {
+            System.err.println("Error applying filters: " + e.getMessage());
+            e.printStackTrace();
+
+            notifications.create("Error applying filters: " + e.getMessage())
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+        }
+    }
+
+    private String criteriaToString(ProductFilterCriteria criteria) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("FilterCriteria{");
+
+        if (criteria.getNameFilter() != null) sb.append("name='").append(criteria.getNameFilter()).append("', ");
+        if (criteria.getCategoryFilter() != null) sb.append("category='").append(criteria.getCategoryFilter()).append("', ");
+        if (criteria.getSourceTypes() != null) sb.append("sources=").append(criteria.getSourceTypes()).append(", ");
+        if (criteria.getMinPrice() != null) sb.append("minPrice=").append(criteria.getMinPrice()).append(", ");
+        if (criteria.getMaxPrice() != null) sb.append("maxPrice=").append(criteria.getMaxPrice()).append(", ");
+        if (criteria.getMinStock() != null) sb.append("minStock=").append(criteria.getMinStock()).append(", ");
+        if (criteria.getMaxStock() != null) sb.append("maxStock=").append(criteria.getMaxStock()).append(", ");
+        if (criteria.getAvailableOnly() != null) sb.append("availableOnly=").append(criteria.getAvailableOnly()).append(", ");
+        if (criteria.getStatuses() != null) sb.append("statuses=").append(criteria.getStatuses()).append(", ");
+        if (criteria.getAiOptimizedOnly() != null) sb.append("aiOnly=").append(criteria.getAiOptimizedOnly()).append(", ");
+        if (criteria.getHasImages() != null) sb.append("hasImages=").append(criteria.getHasImages()).append(", ");
+        if (criteria.getHasGroupId() != null) sb.append("hasGroupId=").append(criteria.getHasGroupId()).append(", ");
+
+        sb.append("}");
+        return sb.toString();
     }
 
     private ProductFilterCriteria buildFilterCriteria() {
         ProductFilterCriteria criteria = new ProductFilterCriteria();
 
-        criteria.setNameFilter(nameFilter.getValue());
-        criteria.setCategoryFilter(categoryFilter.getValue());
-        criteria.setDescriptionFilter(descriptionFilter.getValue());
+        // Text filters - only set if not empty
+        String nameValue = nameFilter.getValue();
+        if (nameValue != null && !nameValue.trim().isEmpty()) {
+            criteria.setNameFilter(nameValue.trim());
+        }
 
-        // Для single select замість multi select
+        String categoryValue = categoryFilter.getValue();
+        if (categoryValue != null && !categoryValue.trim().isEmpty()) {
+            criteria.setCategoryFilter(categoryValue.trim());
+        }
+
+        String descriptionValue = descriptionFilter.getValue();
+        if (descriptionValue != null && !descriptionValue.trim().isEmpty()) {
+            criteria.setDescriptionFilter(descriptionValue.trim());
+        }
+
+        // Source filter
         if (sourceTypeFilter.getValue() != null) {
             criteria.setSourceTypes(Set.of(sourceTypeFilter.getValue()));
         }
 
-        criteria.setMinPrice(BigDecimal.valueOf(Double.parseDouble(minPriceFilter.getValue())));
-        criteria.setMaxPrice(BigDecimal.valueOf(Double.parseDouble(maxPriceFilter.getValue())));
-        criteria.setMinStock(Integer.parseInt(minStockFilter.getValue()));
-        criteria.setMaxStock(Integer.parseInt(maxStockFilter.getValue()));
-        criteria.setAvailableOnly(availableOnlyFilter.getValue());
+        // Price filters - parse strings to BigDecimal
+        String minPriceStr = minPriceFilter.getValue();
+        if (minPriceStr != null && !minPriceStr.trim().isEmpty()) {
+            try {
+                BigDecimal minPrice = new BigDecimal(minPriceStr.trim());
+                if (minPrice.compareTo(BigDecimal.ZERO) >= 0) {
+                    criteria.setMinPrice(minPrice);
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid min price format: " + minPriceStr);
+            }
+        }
 
+        String maxPriceStr = maxPriceFilter.getValue();
+        if (maxPriceStr != null && !maxPriceStr.trim().isEmpty()) {
+            try {
+                BigDecimal maxPrice = new BigDecimal(maxPriceStr.trim());
+                if (maxPrice.compareTo(BigDecimal.ZERO) > 0) {
+                    criteria.setMaxPrice(maxPrice);
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid max price format: " + maxPriceStr);
+            }
+        }
+
+        // Stock filters - parse strings to Integer
+        String minStockStr = minStockFilter.getValue();
+        if (minStockStr != null && !minStockStr.trim().isEmpty()) {
+            try {
+                Integer minStock = Integer.parseInt(minStockStr.trim());
+                if (minStock >= 0) {
+                    criteria.setMinStock(minStock);
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid min stock format: " + minStockStr);
+            }
+        }
+
+        String maxStockStr = maxStockFilter.getValue();
+        if (maxStockStr != null && !maxStockStr.trim().isEmpty()) {
+            try {
+                Integer maxStock = Integer.parseInt(maxStockStr.trim());
+                if (maxStock >= 0) {
+                    criteria.setMaxStock(maxStock);
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid max stock format: " + maxStockStr);
+            }
+        }
+
+        // Boolean filters - handle checkbox values
+        Boolean availableOnly = availableOnlyFilter.getValue();
+        if (Boolean.TRUE.equals(availableOnly)) {
+            criteria.setAvailableOnly(true);
+        }
+
+        // Status filter
         if (statusFilter.getValue() != null) {
             criteria.setStatuses(Set.of(statusFilter.getValue()));
         }
 
-        criteria.setAiOptimizedOnly(aiOptimizedOnlyFilter.getValue());
-        criteria.setHasImages(hasImagesFilter.getValue());
-        criteria.setHasGroupId(hasGroupIdFilter.getValue());
+        // AI/SEO filters - handle checkbox values
+        Boolean aiOptimizedOnly = aiOptimizedOnlyFilter.getValue();
+        if (Boolean.TRUE.equals(aiOptimizedOnly)) {
+            criteria.setAiOptimizedOnly(true);
+        }
+
+        Boolean hasImages = hasImagesFilter.getValue();
+        if (Boolean.TRUE.equals(hasImages)) {
+            criteria.setHasImages(true);
+        }
+
+        Boolean hasGroupId = hasGroupIdFilter.getValue();
+        if (Boolean.TRUE.equals(hasGroupId)) {
+            criteria.setHasGroupId(true);
+        }
 
         return criteria;
+    }
+
+    private boolean matchesCriteria(Product product, ProductFilterCriteria criteria) {
+        // Safety check
+        if (product == null) {
+            return false;
+        }
+
+        // Name filter
+        if (criteria.getNameFilter() != null) {
+            String productName = product.getName();
+            if (productName == null || !productName.toLowerCase().contains(criteria.getNameFilter().toLowerCase())) {
+                return false;
+            }
+        }
+
+        // Category filter
+        if (criteria.getCategoryFilter() != null) {
+            String categoryName = product.getExternalCategoryName();
+            if (categoryName == null || !categoryName.toLowerCase().contains(criteria.getCategoryFilter().toLowerCase())) {
+                return false;
+            }
+        }
+
+        // Description filter
+        if (criteria.getDescriptionFilter() != null) {
+            String description = product.getDescription();
+            if (description == null || !description.toLowerCase().contains(criteria.getDescriptionFilter().toLowerCase())) {
+                return false;
+            }
+        }
+
+        // Source type filter
+        if (criteria.getSourceTypes() != null && !criteria.getSourceTypes().isEmpty()) {
+            SourceType productSourceType = product.getSourceType();
+            if (productSourceType == null || !criteria.getSourceTypes().contains(productSourceType)) {
+                return false;
+            }
+        }
+
+        // Price filters
+        if (criteria.getMinPrice() != null) {
+            BigDecimal productPrice = product.getOriginalPrice();
+            if (productPrice == null || productPrice.compareTo(criteria.getMinPrice()) < 0) {
+                return false;
+            }
+        }
+
+        if (criteria.getMaxPrice() != null) {
+            BigDecimal productPrice = product.getOriginalPrice();
+            if (productPrice == null || productPrice.compareTo(criteria.getMaxPrice()) > 0) {
+                return false;
+            }
+        }
+
+        // Stock filters
+        if (criteria.getMinStock() != null) {
+            Integer stock = product.getStock();
+            if (stock == null || stock < criteria.getMinStock()) {
+                return false;
+            }
+        }
+
+        if (criteria.getMaxStock() != null) {
+            Integer stock = product.getStock();
+            if (stock == null || stock > criteria.getMaxStock()) {
+                return false;
+            }
+        }
+
+        // Available filter
+        if (criteria.getAvailableOnly() != null && criteria.getAvailableOnly()) {
+            Boolean available = product.getAvailable();
+            if (!Boolean.TRUE.equals(available)) {
+                return false;
+            }
+        }
+
+        // Status filter
+        if (criteria.getStatuses() != null && !criteria.getStatuses().isEmpty()) {
+            ProductStatus productStatus = product.getStatus();
+            if (productStatus == null || !criteria.getStatuses().contains(productStatus)) {
+                return false;
+            }
+        }
+
+        // AI optimized filter
+        if (criteria.getAiOptimizedOnly() != null && criteria.getAiOptimizedOnly()) {
+            Boolean aiOptimized = product.getAiOptimized();
+            if (!Boolean.TRUE.equals(aiOptimized)) {
+                return false;
+            }
+        }
+
+        // Has images filter
+        if (criteria.getHasImages() != null && criteria.getHasImages()) {
+            List<String> imageUrls = product.getImageUrls();
+            if (imageUrls == null || imageUrls.isEmpty()) {
+                return false;
+            }
+        }
+
+        // Has group ID filter
+        if (criteria.getHasGroupId() != null && criteria.getHasGroupId()) {
+            String groupId = product.getGroupId();
+            if (groupId == null || groupId.trim().isEmpty()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private List<Product> filterProducts(List<Product> products, ProductFilterCriteria criteria) {
@@ -457,209 +581,57 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
                 .collect(Collectors.toList());
     }
 
-    private boolean matchesCriteria(Product product, ProductFilterCriteria criteria) {
-        // Name filter
-        if (criteria.getNameFilter() != null && !criteria.getNameFilter().trim().isEmpty()) {
-            if (!product.getName().toLowerCase().contains(criteria.getNameFilter().toLowerCase())) {
-                return false;
-            }
-        }
-
-        // Category filter
-        if (criteria.getCategoryFilter() != null && !criteria.getCategoryFilter().trim().isEmpty()) {
-            if (product.getExternalCategoryName() == null ||
-                    !product.getExternalCategoryName().toLowerCase().contains(criteria.getCategoryFilter().toLowerCase())) {
-                return false;
-            }
-        }
-
-        // Description filter
-        if (criteria.getDescriptionFilter() != null && !criteria.getDescriptionFilter().trim().isEmpty()) {
-            if (product.getDescription() == null ||
-                    !product.getDescription().toLowerCase().contains(criteria.getDescriptionFilter().toLowerCase())) {
-                return false;
-            }
-        }
-
-        // Source type filter
-        if (criteria.getSourceTypes() != null && !criteria.getSourceTypes().isEmpty()) {
-            if (!criteria.getSourceTypes().contains(product.getSourceType())) {
-                return false;
-            }
-        }
-
-        // Price filters
-        if (criteria.getMinPrice() != null &&
-                (product.getOriginalPrice() == null || product.getOriginalPrice().compareTo(criteria.getMinPrice()) < 0)) {
-            return false;
-        }
-        if (criteria.getMaxPrice() != null &&
-                (product.getOriginalPrice() == null || product.getOriginalPrice().compareTo(criteria.getMaxPrice()) > 0)) {
-            return false;
-        }
-
-        // Stock filters
-        if (criteria.getMinStock() != null && product.getStock() < criteria.getMinStock()) {
-            return false;
-        }
-        if (criteria.getMaxStock() != null && product.getStock() > criteria.getMaxStock()) {
-            return false;
-        }
-
-        // Available filter
-        if (criteria.getAvailableOnly() != null && criteria.getAvailableOnly() && !product.getAvailable()) {
-            return false;
-        }
-
-        // Status filter
-        if (criteria.getStatuses() != null && !criteria.getStatuses().isEmpty()) {
-            if (!criteria.getStatuses().contains(product.getStatus())) {
-                return false;
-            }
-        }
-
-        // AI optimized filter
-        if (criteria.getAiOptimizedOnly() != null && criteria.getAiOptimizedOnly() && !product.getAiOptimized()) {
-            return false;
-        }
-
-        // Has images filter
-        if (criteria.getHasImages() != null && criteria.getHasImages()) {
-            if (product.getImageUrls() == null || product.getImageUrls().isEmpty()) {
-                return false;
-            }
-        }
-
-        // Has group ID filter
-        if (criteria.getHasGroupId() != null && criteria.getHasGroupId()) {
-            if (product.getGroupId() == null || product.getGroupId().trim().isEmpty()) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private void buildTreeStructure(List<Product> products) {
-        treeItems.clear();
-
-        // Group by source type
-        Map<SourceType, List<Product>> sourceGroups = products.stream()
-                .collect(Collectors.groupingBy(Product::getSourceType));
-
-        for (Map.Entry<SourceType, List<Product>> sourceEntry : sourceGroups.entrySet()) {
-            SourceType sourceType = sourceEntry.getKey();
-            List<Product> sourceProducts = sourceEntry.getValue();
-
-            // Calculate totals for source group
-            BigDecimal sourceTotalValue = sourceProducts.stream()
-                    .filter(p -> p.getOriginalPrice() != null)
-                    .map(Product::getOriginalPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            ProductTreeItem sourceGroup = ProductTreeItem.createSourceGroup(
-                    sourceType, sourceProducts.size(), sourceTotalValue);
-
-            // Group by category within source
-            Map<String, List<Product>> categoryGroups = sourceProducts.stream()
-                    .collect(Collectors.groupingBy(p ->
-                            p.getExternalCategoryName() != null ? p.getExternalCategoryName() : "Uncategorized"));
-
-            for (Map.Entry<String, List<Product>> categoryEntry : categoryGroups.entrySet()) {
-                String category = categoryEntry.getKey();
-                List<Product> categoryProducts = categoryEntry.getValue();
-
-                BigDecimal categoryTotalValue = categoryProducts.stream()
-                        .filter(p -> p.getOriginalPrice() != null)
-                        .map(Product::getOriginalPrice)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                ProductTreeItem categoryGroup = ProductTreeItem.createCategoryGroup(
-                        category, sourceType, categoryProducts.size(), categoryTotalValue);
-
-                // Group by groupId within category
-                Map<String, List<Product>> variantGroups = categoryProducts.stream()
-                        .collect(Collectors.groupingBy(p ->
-                                p.getGroupId() != null ? p.getGroupId() : "single_" + p.getId()));
-
-                for (Map.Entry<String, List<Product>> variantEntry : variantGroups.entrySet()) {
-                    String groupId = variantEntry.getKey();
-                    List<Product> variantProducts = variantEntry.getValue();
-
-                    if (variantProducts.size() > 1 && !groupId.startsWith("single_")) {
-                        // Create variant group for multiple products
-                        BigDecimal variantTotalValue = variantProducts.stream()
-                                .filter(p -> p.getOriginalPrice() != null)
-                                .map(Product::getOriginalPrice)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                        ProductTreeItem variantGroup = ProductTreeItem.createVariantGroup(
-                                groupId, sourceType, category, variantProducts.size(), variantTotalValue);
-
-                        for (Product product : variantProducts) {
-                            ProductTreeItem productItem = ProductTreeItem.createProduct(product);
-                            variantGroup.addChild(productItem);
-                        }
-
-                        categoryGroup.addChild(variantGroup);
-                    } else {
-                        // Add single products directly
-                        for (Product product : variantProducts) {
-                            ProductTreeItem productItem = ProductTreeItem.createProduct(product);
-                            categoryGroup.addChild(productItem);
-                        }
-                    }
-                }
-
-                sourceGroup.addChild(categoryGroup);
-            }
-
-            treeItems.add(sourceGroup);
-        }
-
-        // Update tree grid - правильний спосіб для Jmix 2.5
-        treeItemsDc.setItems(treeItems);
-
-        // Expand first level by default
-        for (ProductTreeItem item : treeItems) {
-            productsTreeGrid.expand(item);
-        }
-    }
-
     private void clearAllFilters() {
-        nameFilter.clear();
-        categoryFilter.clear();
-        descriptionFilter.clear();
-        sourceTypeFilter.clear();
-        minPriceFilter.clear();
-        maxPriceFilter.clear();
-        minStockFilter.clear();
-        maxStockFilter.clear();
-        availableOnlyFilter.setValue(false);
-        statusFilter.clear();
-        aiOptimizedOnlyFilter.setValue(false);
-        hasImagesFilter.setValue(false);
-        hasGroupIdFilter.setValue(false);
+        try {
+            // Clear all filter fields
+            nameFilter.clear();
+            categoryFilter.clear();
+            descriptionFilter.clear();
+            sourceTypeFilter.clear();
+            minPriceFilter.clear();
+            maxPriceFilter.clear();
+            minStockFilter.clear();
+            maxStockFilter.clear();
+            availableOnlyFilter.setValue(false);
+            statusFilter.clear();
+            aiOptimizedOnlyFilter.setValue(false);
+            hasImagesFilter.setValue(false);
+            hasGroupIdFilter.setValue(false);
 
-        buildTreeStructure(allProducts);
+            // Reset to show all products
+            productsDc.setItems(allProducts);
+            updateProductCount(allProducts.size());
 
-        notifications.create("Filters cleared")
-                .withType(Notifications.Type.DEFAULT)
-                .show();
+            notifications.create("Filters cleared - showing all " + allProducts.size() + " products")
+                    .withType(Notifications.Type.DEFAULT)
+                    .show();
+
+            System.out.println("Filters cleared, showing " + allProducts.size() + " products");
+
+        } catch (Exception e) {
+            System.err.println("Error clearing filters: " + e.getMessage());
+            e.printStackTrace();
+
+            notifications.create("Error clearing filters: " + e.getMessage())
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+        }
     }
 
     private void updateButtonStates() {
-        Set<ProductTreeItem> selectedItems = productsTreeGrid.getSelectedItems();
+        Set<Product> selectedItems = productsDataGrid.getSelectedItems();
 
-        boolean hasProductSelected = selectedItems.stream()
-                .anyMatch(item -> item.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT);
+        boolean hasSelection = !selectedItems.isEmpty();
+        boolean singleSelection = selectedItems.size() == 1;
 
-        ProductTreeItem singleSelected = productsTreeGrid.getSingleSelectedItem();
-        boolean singleProductSelected = singleSelected != null &&
-                singleSelected.getType() == ProductTreeItem.ProductTreeItemType.PRODUCT;
+        archiveSelectedButton.setEnabled(hasSelection);
+        editProductButton.setEnabled(singleSelection);
+        bulkPriceUpdateButton.setEnabled(hasSelection);
+        exportSelectedButton.setEnabled(hasSelection);
+    }
 
-        archiveSelectedButton.setEnabled(hasProductSelected);
-        editProductButton.setEnabled(singleProductSelected);
+    private void updateProductCount(int count) {
+        productCountLabel.setText(count + " products");
     }
 
     private void reloadEntity() {
