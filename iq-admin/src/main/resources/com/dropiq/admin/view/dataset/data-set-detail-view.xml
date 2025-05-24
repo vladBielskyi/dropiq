@@ -11,10 +11,9 @@
             <loader id="dataSetDl"/>
         </instance>
 
-        <collection id="productsDc"
-                    class="com.dropiq.admin.entity.Product">
-            <fetchPlan extends="_base"/>
-            <loader id="productsDl" readOnly="true"/>
+        <collection id="treeItemsDc"
+                    class="com.dropiq.admin.entity.ProductTreeItem">
+            <loader id="treeItemsDl" readOnly="true"/>
         </collection>
     </data>
     <facets>
@@ -28,6 +27,7 @@
     <layout>
         <vbox width="100%" height="100%" spacing="true">
             <tabSheet id="tabSheet" width="100%" height="100%">
+
                 <!-- Dataset Info Tab -->
                 <tab id="infoTab" label="Dataset Info">
                     <vbox spacing="true" padding="true">
@@ -69,64 +69,52 @@
                 <tab id="productsTab" label="Products">
                     <vbox width="100%" height="100%" spacing="true" padding="true">
 
-                        <!-- Filters -->
-                        <hbox spacing="true" alignItems="END">
-                            <textField id="productNameFilter"
-                                       label="Product Name"
-                                       placeholder="Search by name..."
-                                       width="200px"/>
-                            <textField id="categoryFilter"
-                                       label="Category"
-                                       placeholder="Search by category..."
-                                       width="200px"/>
-                            <button id="applyFilterButton"
-                                    text="Apply"
-                                    icon="SEARCH"/>
-                            <button id="clearFilterButton"
-                                    text="Clear"
-                                    icon="CLOSE"/>
+                        <!-- Filter Toggle and Tree Controls -->
+                        <hbox spacing="true" alignItems="CENTER">
+                            <button id="toggleFiltersButton"
+                                    text="Show Filters"
+                                    icon="ANGLE_DOWN"/>
+                            <separator/>
+                            <button id="expandAllButton"
+                                    text="Expand All"
+                                    icon="PLUS"
+                                    themeNames="tertiary"/>
+                            <button id="collapseAllButton"
+                                    text="Collapse All"
+                                    icon="MINUS"
+                                    themeNames="tertiary"/>
                         </hbox>
 
-                        <!-- Action Buttons -->
-                        <hbox spacing="true">
-                            <button id="editProductButton"
-                                    text="Edit Product"
-                                    icon="EDIT"
-                                    enabled="false"
-                                    themeNames="primary"/>
-                            <button id="archiveSelectedButton"
-                                    text="Archive Selected"
-                                    icon="ARCHIVE"
-                                    enabled="false"/>
-                            <span text="Double-click product to edit, or select and use buttons"/>
-                        </hbox>
+                        <!-- Advanced Filters Container -->
+                        <div id="filtersContainer" visible="false" className="filters-container">
+                            <vbox spacing="true" padding="true">
 
-                        <!-- Products Grid -->
-                        <dataGrid id="productsDataGrid"
-                                  width="100%"
-                                  minHeight="500px"
-                                  dataContainer="productsDc"
-                                  columnReorderingAllowed="true"
-                                  multiSort="true">
-                            <columns resizable="true">
-                                <column property="name" width="250px"/>
-                                <column property="originalPrice" width="100px" header="Price"/>
-                                <column property="stock" width="80px"/>
-                                <column property="available" width="80px"/>
-                                <column property="externalCategoryName" width="150px" header="Category"/>
-                                <column property="sourceType" width="100px" header="Source"/>
-                                <column property="updatedAt" width="150px" header="Updated"/>
-                            </columns>
-                        </dataGrid>
-                    </vbox>
-                </tab>
-            </tabSheet>
+                                <!-- Basic Text Filters -->
+                                <hbox spacing="true" alignItems="END">
+                                    <textField id="nameFilter"
+                                               label="Product Name"
+                                               placeholder="Search by name..."
+                                               width="200px"/>
+                                    <textField id="categoryFilter"
+                                               label="Category"
+                                               placeholder="Search by category..."
+                                               width="200px"/>
+                                    <textField id="descriptionFilter"
+                                               label="Description"
+                                               placeholder="Search in description..."
+                                               width="200px"/>
+                                </hbox>
 
-            <!-- Save/Close Actions -->
-            <hbox id="detailActions" spacing="true" padding="true">
-                <button id="saveAndCloseButton" action="saveAction"/>
-                <button id="closeButton" action="closeAction"/>
-            </hbox>
-        </vbox>
-    </layout>
-</view>
+                                <!-- Source and Status Filters -->
+                                <hbox spacing="true" alignItems="END">
+                                    <select id="sourceTypeFilter"
+                                            label="Source Type"
+                                            width="200px"/>
+                                    <select id="statusFilter"
+                                            label="Status"
+                                            width="200px"/>
+                                </hbox>
+
+                                <!-- Price Filters -->
+                                <hbox spacing="true" alignItems="END">
+                                    <textField id="
