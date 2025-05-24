@@ -2,6 +2,7 @@ package com.dropiq.admin.view.dataset;
 
 import com.dropiq.admin.entity.DataSet;
 import com.dropiq.admin.entity.Product;
+import com.dropiq.admin.model.ProductDisplayItem;
 import com.dropiq.admin.model.ProductFilterCriteria;
 import com.dropiq.admin.model.ProductStatus;
 import com.dropiq.admin.model.SourceType;
@@ -10,9 +11,9 @@ import com.dropiq.admin.view.main.MainView;
 import com.dropiq.admin.view.product.ProductDetailView;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -43,7 +44,16 @@ import java.util.stream.Collectors;
 public class DataSetDetailView extends StandardDetailView<DataSet> {
 
     @ViewComponent
-    private DataGrid<Product> productsDataGrid;
+    private DataGrid<ProductDisplayItem> productsDataGrid;
+
+    @ViewComponent
+    private CollectionContainer<ProductDisplayItem> productDisplayDc;
+
+    @ViewComponent
+    private CollectionContainer<Product> productsDc;
+
+    @ViewComponent
+    private CollectionLoader<Product> productsDl;
 
     @ViewComponent
     private JmixButton archiveSelectedButton;
@@ -69,7 +79,7 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     @ViewComponent
     private Span productCountLabel;
 
-    // Basic filters
+    // Filter components
     @ViewComponent
     private JmixSelect<SourceType> sourceTypeFilter;
 
@@ -94,7 +104,6 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     @ViewComponent
     private TypedTextField<String> maxStockFilter;
 
-
     @ViewComponent
     private JmixCheckbox availableOnlyFilter;
 
@@ -116,12 +125,6 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     @ViewComponent
     private JmixButton clearFiltersButton;
 
-    @ViewComponent
-    private CollectionContainer<Product> productsDc;
-
-    @ViewComponent
-    private CollectionLoader<Product> productsDl;
-
     @Autowired
     private DataSetService dataSetService;
 
@@ -138,6 +141,7 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     private DialogWindows dialogWindows;
 
     private List<Product> allProducts = new ArrayList<>();
+    private List<ProductDisplayItem> displayItems = new ArrayList<>();
     private boolean filtersVisible = false;
 
     @Subscribe
@@ -149,20 +153,29 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     }
 
     private void setupDataGrid() {
-        // Set up image column renderer
-        productsDataGrid.getColumnByKey("image").setRenderer(new ComponentRenderer<>(this::createImageComponent));
+        // Set up expand/collapse toggle column
+        productsDataGrid.getColumnByKey("expandToggle").setRenderer(new ComponentRenderer<>(this::createExpandToggleComponent));
 
-        // Set up grouping by source and category
-        productsDataGrid.setDetailsVisibleOnClick(false);
+        // Set up other custom columns
+        productsDataGrid.getColumnByKey("source").setRenderer(new ComponentRenderer<>(this::createSourceComponent));
+        productsDataGrid.getColumnByKey("category").setRenderer(new ComponentRenderer<>(this::createCategoryComponent));
+        productsDataGrid.getColumnByKey("image").setRenderer(new ComponentRenderer<>(this::createImageComponent));
+        productsDataGrid.getColumnByKey("price").setRenderer(new ComponentRenderer<>(this::createPriceComponent));
+        productsDataGrid.getColumnByKey("stock").setRenderer(new ComponentRenderer<>(this::createStockComponent));
+        productsDataGrid.getColumnByKey("status").setRenderer(new ComponentRenderer<>(this::createStatusComponent));
+        productsDataGrid.getColumnByKey("available").setRenderer(new ComponentRenderer<>(this::createAvailableComponent));
 
         // Selection listener
         productsDataGrid.addSelectionListener(e -> updateButtonStates());
 
         // Double-click listener
         productsDataGrid.addItemDoubleClickListener(e -> {
-            Product product = e.getItem();
-            if (product != null) {
-                openProductEditor(product);
+            ProductDisplayItem item = e.getItem();
+            if (item != null && !item.isGroup()) {
+                Product product = item.getActualProduct();
+                if (product != null) {
+                    openProductEditor(product);
+                }
             }
         });
     }
@@ -183,17 +196,240 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
         toggleFiltersButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     }
 
-    private Component createImageComponent(Product product) {
-        if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
-            Image image = new Image(product.getImageUrls().get(0), "Product");
-            image.setWidth("50px");
-            image.setHeight("50px");
-            image.addClassName("product-image");
-            image.getStyle().set("object-fit", "cover");
-            image.getStyle().set("border-radius", "4px");
-            return image;
+    private Component createExpandToggleComponent(ProductDisplayItem item) {
+        if (item.isGroup()) {
+            Button toggleButton = new Button();
+            toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+
+            if (item.isExpanded()) {
+                toggleButton.setIcon(VaadinIcon.MINUS.create());
+                toggleButton.getStyle().set("color", "var(--lumo-primary-color)");
+            } else {
+                toggleButton.setIcon(VaadinIcon.PLUS.create());
+                toggleButton.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            }
+
+            toggleButton.addClickListener(e -> toggleGroupExpansion(item));
+            return toggleButton;
+        }
+        return new Span("");
+    }
+
+    private Component createSourceComponent(ProductDisplayItem item) {
+        Product product = item.getActualProduct();
+        if (product != null && product.getSourceType() != null) {
+            Span sourceSpan = new Span(product.getSourceType().name());
+            sourceSpan.addClassName("source-badge");
+            return sourceSpan;
+        }
+        return new Span("");
+    }
+
+    private Component createCategoryComponent(ProductDisplayItem item) {
+        Product product = item.getActualProduct();
+        if (product != null && product.getExternalCategoryName() != null) {
+            return new Span(product.getExternalCategoryName());
+        }
+        return new Span("");
+    }
+
+    private Component createImageComponent(ProductDisplayItem item) {
+        if (item.isGroup()) {
+            // Show first variant's image for group
+            Product firstProduct = item.getVariants().get(0);
+            if (firstProduct.getImageUrls() != null && !firstProduct.getImageUrls().isEmpty()) {
+                Image image = new Image(firstProduct.getImageUrls().get(0), "Product Group");
+                image.setWidth("50px");
+                image.setHeight("50px");
+                image.addClassName("product-image");
+                image.getStyle().set("object-fit", "cover");
+                image.getStyle().set("border-radius", "4px");
+                image.getStyle().set("opacity", "0.8"); // Slightly faded for group
+                return image;
+            }
+        } else {
+            Product product = item.getActualProduct();
+            if (product != null && product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
+                Image image = new Image(product.getImageUrls().get(0), "Product");
+                image.setWidth("50px");
+                image.setHeight("50px");
+                image.addClassName("product-image");
+                image.getStyle().set("object-fit", "cover");
+                image.getStyle().set("border-radius", "4px");
+                return image;
+            }
         }
         return new Span("No image");
+    }
+
+    private Component createPriceComponent(ProductDisplayItem item) {
+        if (item.isGroup()) {
+            BigDecimal avgPrice = item.getTotalValue().divide(BigDecimal.valueOf(item.getVariantCount()), 2, BigDecimal.ROUND_HALF_UP);
+            Span priceSpan = new Span(String.format("%.2f UAH avg", avgPrice));
+            priceSpan.getStyle().set("font-weight", "bold");
+            return priceSpan;
+        } else {
+            Product product = item.getActualProduct();
+            if (product != null && product.getOriginalPrice() != null) {
+                return new Span(String.format("%.2f UAH", product.getOriginalPrice()));
+            }
+        }
+        return new Span("");
+    }
+
+    private Component createStockComponent(ProductDisplayItem item) {
+        if (item.isGroup()) {
+            int totalStock = item.getVariants().stream()
+                    .mapToInt(p -> p.getStock() != null ? p.getStock() : 0)
+                    .sum();
+            Span stockSpan = new Span(String.valueOf(totalStock));
+            stockSpan.getStyle().set("font-weight", "bold");
+            return stockSpan;
+        } else {
+            Product product = item.getActualProduct();
+            if (product != null) {
+                int stock = product.getStock() != null ? product.getStock() : 0;
+                Span stockSpan = new Span(String.valueOf(stock));
+
+                if (stock == 0) {
+                    stockSpan.getStyle().set("color", "var(--lumo-error-color)");
+                } else if (stock < 10) {
+                    stockSpan.getStyle().set("color", "var(--lumo-warning-color)");
+                }
+
+                return stockSpan;
+            }
+        }
+        return new Span("");
+    }
+
+    private Component createStatusComponent(ProductDisplayItem item) {
+        if (item.isGroup()) {
+            long activeCount = item.getVariants().stream()
+                    .filter(p -> p.getStatus() == ProductStatus.ACTIVE)
+                    .count();
+            Span statusSpan = new Span(activeCount + "/" + item.getVariantCount() + " active");
+            statusSpan.addClassName("status-badge");
+            return statusSpan;
+        } else {
+            Product product = item.getActualProduct();
+            if (product != null && product.getStatus() != null) {
+                Span badge = new Span(product.getStatus().name());
+                badge.addClassName("status-badge");
+
+                switch (product.getStatus()) {
+                    case ACTIVE:
+                        badge.getStyle().set("color", "var(--lumo-success-color)");
+                        break;
+                    case INACTIVE:
+                        badge.getStyle().set("color", "var(--lumo-error-color)");
+                        break;
+                    case DRAFT:
+                        badge.getStyle().set("color", "var(--lumo-warning-color)");
+                        break;
+                    default:
+                        badge.getStyle().set("color", "var(--lumo-secondary-text-color)");
+                }
+
+                return badge;
+            }
+        }
+        return new Span("");
+    }
+
+    private Component createAvailableComponent(ProductDisplayItem item) {
+        if (item.isGroup()) {
+            long availableCount = item.getVariants().stream()
+                    .filter(p -> Boolean.TRUE.equals(p.getAvailable()))
+                    .count();
+            return new Span(availableCount + "/" + item.getVariantCount());
+        } else {
+            Product product = item.getActualProduct();
+            if (product != null) {
+                boolean available = Boolean.TRUE.equals(product.getAvailable());
+                Span availableSpan = new Span(available ? "Yes" : "No");
+                availableSpan.getStyle().set("color", available ? "var(--lumo-success-color)" : "var(--lumo-error-color)");
+                return availableSpan;
+            }
+        }
+        return new Span("");
+    }
+
+    private void toggleGroupExpansion(ProductDisplayItem groupItem) {
+        groupItem.setExpanded(!groupItem.isExpanded());
+        buildDisplayItems(allProducts);
+
+        // Refresh the grid
+        productDisplayDc.setItems(displayItems);
+
+        System.out.println("Toggled group " + groupItem.getGroupId() + " to " + (groupItem.isExpanded() ? "expanded" : "collapsed"));
+    }
+
+    private void loadProducts() {
+        DataSet dataSet = getEditedEntity();
+        if (dataSet != null && dataSet.getId() != null) {
+            productsDl.setParameter("datasetId", dataSet.getId());
+            productsDl.load();
+
+            allProducts = new ArrayList<>(productsDc.getItems());
+
+            // ADD THIS GROUPING LOGIC
+            if (productDisplayDc != null) {
+                buildDisplayItems(allProducts);
+                System.out.println("Using grouped display with " + allProducts.size() + " products");
+            } else {
+                // Fallback to old approach
+                updateProductCount(allProducts.size());
+                System.out.println("Using simple display with " + allProducts.size() + " products");
+            }
+        }
+    }
+
+    // ADD THIS METHOD to your existing class
+    private void buildDisplayItems(List<Product> products) {
+        if (productDisplayDc == null) {
+            System.err.println("productDisplayDc is null - grouping not available");
+            return;
+        }
+
+        List<ProductDisplayItem> displayItems = new ArrayList<>();
+
+        // Group products by groupId
+        Map<String, List<Product>> groupedProducts = products.stream()
+                .collect(Collectors.groupingBy(p ->
+                        p.getGroupId() != null && !p.getGroupId().trim().isEmpty()
+                                ? p.getGroupId()
+                                : "single_" + p.getId()));
+
+        System.out.println("Found " + groupedProducts.size() + " groups from " + products.size() + " products");
+
+        for (Map.Entry<String, List<Product>> entry : groupedProducts.entrySet()) {
+            String groupId = entry.getKey();
+            List<Product> groupProducts = entry.getValue();
+
+            if (groupProducts.size() == 1 || groupId.startsWith("single_")) {
+                // Single product - no grouping needed
+                displayItems.add(ProductDisplayItem.createSingleProduct(groupProducts.get(0)));
+                System.out.println("Added single product: " + groupProducts.get(0).getName());
+            } else {
+                // Multiple products with same groupId - create group
+                ProductDisplayItem groupItem = ProductDisplayItem.createProductGroup(groupId, groupProducts);
+                displayItems.add(groupItem);
+                System.out.println("Added product group: " + groupId + " with " + groupProducts.size() + " variants");
+
+                // Add expanded variants (for testing, let's expand by default)
+                groupItem.setExpanded(true);
+                for (Product variant : groupProducts) {
+                    displayItems.add(ProductDisplayItem.createVariantProduct(variant));
+                }
+            }
+        }
+
+        // Update the grid
+        productDisplayDc.setItems(displayItems);
+        updateProductCount(products.size());
+
+        System.out.println("Built " + displayItems.size() + " display items");
     }
 
     @Subscribe("toggleFiltersButton")
@@ -244,16 +480,23 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
 
     @Subscribe("editProductButton")
     public void onEditProductButtonClick(ClickEvent<JmixButton> event) {
-        Product selected = productsDataGrid.getSingleSelectedItem();
-        if (selected != null) {
-            openProductEditor(selected);
+        ProductDisplayItem selected = productsDataGrid.getSingleSelectedItem();
+        if (selected != null && !selected.isGroup()) {
+            Product product = selected.getActualProduct();
+            if (product != null) {
+                openProductEditor(product);
+            }
         }
     }
 
     @Subscribe("archiveSelectedButton")
     public void onArchiveSelectedButtonClick(ClickEvent<JmixButton> event) {
-        Set<Product> selectedItems = productsDataGrid.getSelectedItems();
-        List<Product> productsToArchive = new ArrayList<>(selectedItems);
+        Set<ProductDisplayItem> selectedItems = productsDataGrid.getSelectedItems();
+        List<Product> productsToArchive = selectedItems.stream()
+                .filter(item -> !item.isGroup())
+                .map(ProductDisplayItem::getActualProduct)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
         if (!productsToArchive.isEmpty()) {
             try {
@@ -285,42 +528,23 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
                 .open();
     }
 
-    private void loadProducts() {
-        DataSet dataSet = getEditedEntity();
-        if (dataSet != null && dataSet.getId() != null) {
-            productsDl.setParameter("datasetId", dataSet.getId());
-            productsDl.load();
-
-            allProducts = new ArrayList<>(productsDc.getItems());
-            updateProductCount(allProducts.size());
-
-            System.out.println("Loaded " + allProducts.size() + " products for dataset");
-        }
-    }
-
     private void applyFilters() {
         try {
             ProductFilterCriteria criteria = buildFilterCriteria();
 
-            // Validate criteria
             if (criteria.isEmpty()) {
-                // Show all products if no filters applied
-                productsDc.setItems(allProducts);
-                updateProductCount(allProducts.size());
+                buildDisplayItems(allProducts);
                 notifications.create("No filters applied - showing all " + allProducts.size() + " products")
                         .withType(Notifications.Type.DEFAULT)
                         .show();
                 return;
             }
 
-            // Debug logging
             System.out.println("Applying filters to " + allProducts.size() + " products");
             System.out.println("Filter criteria: " + criteriaToString(criteria));
 
             List<Product> filteredProducts = filterProducts(allProducts, criteria);
-
-            productsDc.setItems(filteredProducts);
-            updateProductCount(filteredProducts.size());
+            buildDisplayItems(filteredProducts);
 
             String message = "Applied filters: showing " + filteredProducts.size() + " of " + allProducts.size() + " products";
             notifications.create(message)
@@ -339,27 +563,7 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
         }
     }
 
-    private String criteriaToString(ProductFilterCriteria criteria) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("FilterCriteria{");
-
-        if (criteria.getNameFilter() != null) sb.append("name='").append(criteria.getNameFilter()).append("', ");
-        if (criteria.getCategoryFilter() != null) sb.append("category='").append(criteria.getCategoryFilter()).append("', ");
-        if (criteria.getSourceTypes() != null) sb.append("sources=").append(criteria.getSourceTypes()).append(", ");
-        if (criteria.getMinPrice() != null) sb.append("minPrice=").append(criteria.getMinPrice()).append(", ");
-        if (criteria.getMaxPrice() != null) sb.append("maxPrice=").append(criteria.getMaxPrice()).append(", ");
-        if (criteria.getMinStock() != null) sb.append("minStock=").append(criteria.getMinStock()).append(", ");
-        if (criteria.getMaxStock() != null) sb.append("maxStock=").append(criteria.getMaxStock()).append(", ");
-        if (criteria.getAvailableOnly() != null) sb.append("availableOnly=").append(criteria.getAvailableOnly()).append(", ");
-        if (criteria.getStatuses() != null) sb.append("statuses=").append(criteria.getStatuses()).append(", ");
-        if (criteria.getAiOptimizedOnly() != null) sb.append("aiOnly=").append(criteria.getAiOptimizedOnly()).append(", ");
-        if (criteria.getHasImages() != null) sb.append("hasImages=").append(criteria.getHasImages()).append(", ");
-        if (criteria.getHasGroupId() != null) sb.append("hasGroupId=").append(criteria.getHasGroupId()).append(", ");
-
-        sb.append("}");
-        return sb.toString();
-    }
-
+    // All the existing filter methods remain exactly the same
     private ProductFilterCriteria buildFilterCriteria() {
         ProductFilterCriteria criteria = new ProductFilterCriteria();
 
@@ -581,6 +785,27 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
                 .collect(Collectors.toList());
     }
 
+    private String criteriaToString(ProductFilterCriteria criteria) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("FilterCriteria{");
+
+        if (criteria.getNameFilter() != null) sb.append("name='").append(criteria.getNameFilter()).append("', ");
+        if (criteria.getCategoryFilter() != null) sb.append("category='").append(criteria.getCategoryFilter()).append("', ");
+        if (criteria.getSourceTypes() != null) sb.append("sources=").append(criteria.getSourceTypes()).append(", ");
+        if (criteria.getMinPrice() != null) sb.append("minPrice=").append(criteria.getMinPrice()).append(", ");
+        if (criteria.getMaxPrice() != null) sb.append("maxPrice=").append(criteria.getMaxPrice()).append(", ");
+        if (criteria.getMinStock() != null) sb.append("minStock=").append(criteria.getMinStock()).append(", ");
+        if (criteria.getMaxStock() != null) sb.append("maxStock=").append(criteria.getMaxStock()).append(", ");
+        if (criteria.getAvailableOnly() != null) sb.append("availableOnly=").append(criteria.getAvailableOnly()).append(", ");
+        if (criteria.getStatuses() != null) sb.append("statuses=").append(criteria.getStatuses()).append(", ");
+        if (criteria.getAiOptimizedOnly() != null) sb.append("aiOnly=").append(criteria.getAiOptimizedOnly()).append(", ");
+        if (criteria.getHasImages() != null) sb.append("hasImages=").append(criteria.getHasImages()).append(", ");
+        if (criteria.getHasGroupId() != null) sb.append("hasGroupId=").append(criteria.getHasGroupId()).append(", ");
+
+        sb.append("}");
+        return sb.toString();
+    }
+
     private void clearAllFilters() {
         try {
             // Clear all filter fields
@@ -599,8 +824,7 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
             hasGroupIdFilter.setValue(false);
 
             // Reset to show all products
-            productsDc.setItems(allProducts);
-            updateProductCount(allProducts.size());
+            buildDisplayItems(allProducts);
 
             notifications.create("Filters cleared - showing all " + allProducts.size() + " products")
                     .withType(Notifications.Type.DEFAULT)
@@ -619,15 +843,19 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     }
 
     private void updateButtonStates() {
-        Set<Product> selectedItems = productsDataGrid.getSelectedItems();
+        Set<ProductDisplayItem> selectedItems = productsDataGrid.getSelectedItems();
 
-        boolean hasSelection = !selectedItems.isEmpty();
-        boolean singleSelection = selectedItems.size() == 1;
+        // Only enable buttons for non-group items
+        boolean hasProductSelected = selectedItems.stream()
+                .anyMatch(item -> !item.isGroup());
 
-        archiveSelectedButton.setEnabled(hasSelection);
-        editProductButton.setEnabled(singleSelection);
-        bulkPriceUpdateButton.setEnabled(hasSelection);
-        exportSelectedButton.setEnabled(hasSelection);
+        ProductDisplayItem singleSelected = productsDataGrid.getSingleSelectedItem();
+        boolean singleProductSelected = singleSelected != null && !singleSelected.isGroup();
+
+        archiveSelectedButton.setEnabled(hasProductSelected);
+        editProductButton.setEnabled(singleProductSelected);
+        bulkPriceUpdateButton.setEnabled(hasProductSelected);
+        exportSelectedButton.setEnabled(hasProductSelected);
     }
 
     private void updateProductCount(int count) {
