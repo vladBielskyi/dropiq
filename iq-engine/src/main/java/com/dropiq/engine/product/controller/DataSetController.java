@@ -7,13 +7,17 @@ import com.dropiq.engine.product.entity.DataSet;
 import com.dropiq.engine.product.entity.Product;
 import com.dropiq.engine.product.model.DataSetFilter;
 import com.dropiq.engine.product.model.DataSetStatistics;
+import com.dropiq.engine.product.model.SyncJobType;
 import com.dropiq.engine.product.service.DataSetService;
+import com.dropiq.engine.product.service.SyncSchedulingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -22,6 +26,7 @@ import java.util.List;
 public class DataSetController {
 
     private final DataSetService dataSetService;
+    private SyncSchedulingService syncSchedulingService;
 
     /**
      * Create dataset from data sources
@@ -174,5 +179,70 @@ public class DataSetController {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @PostMapping("/{id}/sync")
+    public ResponseEntity<String> syncDataset(@PathVariable Long id,
+                                              @RequestHeader("X-User-ID") String userId) {
+        try {
+            log.info("Sync request received for dataset {} by user {}", id, userId);
+
+            // Get the dataset
+            Optional<DataSet> dataSetOpt = dataSetService.getDataset(id, userId);
+            if (dataSetOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            DataSet dataSet = dataSetOpt.get();
+
+            // Schedule sync job
+            Long userIdLong = getUserIdFromUsername(userId); // Convert username to ID
+            syncSchedulingService.scheduleSync(
+                    userIdLong,
+                    "DATASET",
+                    id,
+                    SyncJobType.DATASET_SYNC,
+                    LocalDateTime.now(),
+                    5 // Normal priority
+            );
+
+            log.info("Sync job scheduled for dataset: {}", dataSet.getName());
+            return ResponseEntity.ok("Synchronization scheduled successfully");
+
+        } catch (Exception e) {
+            log.error("Error scheduling sync for dataset {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body("Failed to schedule synchronization: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get dataset sync status
+     */
+    @GetMapping("/{id}/sync/status")
+    public ResponseEntity<String> getSyncStatus(@PathVariable Long id,
+                                                @RequestHeader("X-User-ID") String userId) {
+        try {
+            Optional<DataSet> dataSetOpt = dataSetService.getDataset(id, userId);
+            if (dataSetOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            DataSet dataSet = dataSetOpt.get();
+            return ResponseEntity.ok(dataSet.getStatus().name());
+
+        } catch (Exception e) {
+            log.error("Error getting sync status for dataset {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body("Error getting sync status");
+        }
+    }
+
+    /**
+     * Convert username to user ID (simplified)
+     */
+    private Long getUserIdFromUsername(String username) {
+        // In a real implementation, this would query the user service
+        // For now, return a default ID
+        return 1L;
     }
 }

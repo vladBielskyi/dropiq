@@ -90,7 +90,7 @@ public class Product {
     private LocalDateTime lastSync;
 
     @Column(name = "status")
-    private String status = ProductStatus.DRAFT.name();
+    private String status;
 
     @Column(name = "ai_optimized")
     private Boolean aiOptimized = false;
@@ -139,11 +139,19 @@ public class Product {
     }
 
     public SourceType getSourceType() {
-        return SourceType.valueOf(sourceType);
+        return sourceType == null ? null : SourceType.valueOf(sourceType);
     }
 
     public ProductStatus getStatus() {
-        return ProductStatus.valueOf(status);
+        return status == null ? null : ProductStatus.valueOf(status);
+    }
+
+    public void setStatus(ProductStatus status) {
+        this.status = status.name();
+    }
+
+    public void setSourceType(SourceType sourceType) {
+        this.sourceType = sourceType.name();
     }
 
     private void calculateSellingPrice() {

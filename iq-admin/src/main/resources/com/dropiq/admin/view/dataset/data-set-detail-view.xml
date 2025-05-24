@@ -5,9 +5,17 @@
     <data>
         <instance id="dataSetDc"
                   class="com.dropiq.admin.entity.DataSet">
-            <fetchPlan extends="_base"/>
+            <fetchPlan extends="_base">
+                <property name="products" fetchPlan="_base"/>
+            </fetchPlan>
             <loader id="dataSetDl"/>
         </instance>
+
+        <collection id="productsDc"
+                    class="com.dropiq.admin.entity.Product">
+            <fetchPlan extends="_base"/>
+            <loader id="productsDl" readOnly="true"/>
+        </collection>
     </data>
     <facets>
         <dataLoadCoordinator auto="true"/>
@@ -16,37 +24,109 @@
         <action id="saveAction" type="detail_saveClose"/>
         <action id="closeAction" type="detail_close"/>
     </actions>
+
     <layout>
-        <formLayout id="form" dataContainer="dataSetDc">
-            <responsiveSteps>
-                <responsiveStep minWidth="0" columns="1"/>
-                <responsiveStep minWidth="40em" columns="2"/>
-            </responsiveSteps>
-            <textField id="nameField" property="name"/>
-            <textField id="descriptionField" property="description"/>
-            <select id="statusField" property="status"/>
-            <textField id="createdByField" property="createdBy"/>
-            <dateTimePicker id="createdAtField" property="createdAt"/>
-            <dateTimePicker id="updatedAtField" property="updatedAt"/>
-            <dateTimePicker id="lastSyncField" property="lastSync"/>
-            <checkbox id="autoSyncField" property="autoSync"/>
-            <textField id="syncIntervalHoursField" property="syncIntervalHours"/>
-            <textField id="defaultMarkupField" property="defaultMarkup"/>
-            <textField id="minProfitMarginField" property="minProfitMargin"/>
-            <checkbox id="autoPriceUpdateField" property="autoPriceUpdate"/>
-            <checkbox id="autoStockUpdateField" property="autoStockUpdate"/>
-            <checkbox id="aiOptimizationEnabledField" property="aiOptimizationEnabled"/>
-            <checkbox id="seoOptimizationEnabledField" property="seoOptimizationEnabled"/>
-            <checkbox id="trendAnalysisEnabledField" property="trendAnalysisEnabled"/>
-            <textField id="totalProductsField" property="totalProducts"/>
-            <textField id="activeProductsField" property="activeProducts"/>
-            <textField id="syncCountField" property="syncCount"/>
-            <textField id="errorCountField" property="errorCount"/>
-            <textField id="lastErrorMessageField" property="lastErrorMessage"/>
-        </formLayout>
-        <hbox id="detailActions">
-            <button id="saveAndCloseButton" action="saveAction"/>
-            <button id="closeButton" action="closeAction"/>
-        </hbox>
+        <vbox width="100%" height="100%" spacing="true">
+            <tabSheet id="tabSheet" width="100%" height="100%">
+                <!-- Dataset Info Tab -->
+                <tab id="infoTab" label="Dataset Info">
+                    <vbox spacing="true" padding="true">
+                        <formLayout id="form" dataContainer="dataSetDc">
+                            <responsiveSteps>
+                                <responsiveStep minWidth="0" columns="1"/>
+                                <responsiveStep minWidth="40em" columns="2"/>
+                            </responsiveSteps>
+
+                            <textField id="nameField" property="name" colspan="2"/>
+                            <textArea id="descriptionField" property="description" colspan="2" height="100px"/>
+
+                            <select id="statusField" property="status"/>
+                            <textField id="createdByField" property="createdBy" readOnly="true"/>
+
+                            <dateTimePicker id="lastSyncField" property="lastSync" readOnly="true"/>
+                            <checkbox id="autoSyncField" property="autoSync"/>
+
+                            <textField id="totalProductsField" property="totalProducts" readOnly="true"/>
+                            <textField id="activeProductsField" property="activeProducts" readOnly="true"/>
+
+                            <textField id="defaultMarkupField" property="defaultMarkup"/>
+                            <textField id="minProfitMarginField" property="minProfitMargin"/>
+
+                            <checkbox id="aiOptimizationEnabledField" property="aiOptimizationEnabled"/>
+                            <checkbox id="seoOptimizationEnabledField" property="seoOptimizationEnabled"/>
+                        </formLayout>
+
+                        <hbox spacing="true" padding="true">
+                            <button id="syncDatasetButton"
+                                    text="Synchronize Dataset"
+                                    icon="REFRESH"
+                                    themeNames="primary"/>
+                        </hbox>
+                    </vbox>
+                </tab>
+
+                <!-- Products Tab -->
+                <tab id="productsTab" label="Products">
+                    <vbox width="100%" height="100%" spacing="true" padding="true">
+
+                        <!-- Filters -->
+                        <hbox spacing="true" alignItems="END">
+                            <textField id="productNameFilter"
+                                       label="Product Name"
+                                       placeholder="Search by name..."
+                                       width="200px"/>
+                            <textField id="categoryFilter"
+                                       label="Category"
+                                       placeholder="Search by category..."
+                                       width="200px"/>
+                            <button id="applyFilterButton"
+                                    text="Apply"
+                                    icon="SEARCH"/>
+                            <button id="clearFilterButton"
+                                    text="Clear"
+                                    icon="CLOSE"/>
+                        </hbox>
+
+                        <!-- Action Buttons -->
+                        <hbox spacing="true">
+                            <button id="editProductButton"
+                                    text="Edit Product"
+                                    icon="EDIT"
+                                    enabled="false"
+                                    themeNames="primary"/>
+                            <button id="archiveSelectedButton"
+                                    text="Archive Selected"
+                                    icon="ARCHIVE"
+                                    enabled="false"/>
+                            <span text="Double-click product to edit, or select and use buttons"/>
+                        </hbox>
+
+                        <!-- Products Grid -->
+                        <dataGrid id="productsDataGrid"
+                                  width="100%"
+                                  minHeight="500px"
+                                  dataContainer="productsDc"
+                                  columnReorderingAllowed="true"
+                                  multiSort="true">
+                            <columns resizable="true">
+                                <column property="name" width="250px"/>
+                                <column property="originalPrice" width="100px" header="Price"/>
+                                <column property="stock" width="80px"/>
+                                <column property="available" width="80px"/>
+                                <column property="externalCategoryName" width="150px" header="Category"/>
+                                <column property="sourceType" width="100px" header="Source"/>
+                                <column property="updatedAt" width="150px" header="Updated"/>
+                            </columns>
+                        </dataGrid>
+                    </vbox>
+                </tab>
+            </tabSheet>
+
+            <!-- Save/Close Actions -->
+            <hbox id="detailActions" spacing="true" padding="true">
+                <button id="saveAndCloseButton" action="saveAction"/>
+                <button id="closeButton" action="closeAction"/>
+            </hbox>
+        </vbox>
     </layout>
 </view>

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      xmlns:c="http://jmix.io/schema/flowui/jpql-condition"
       title="msg://dataSetListView.title"
       focusComponent="dataSetsDataGrid">
     <data>
@@ -9,7 +8,7 @@
             <fetchPlan extends="_base"/>
             <loader id="dataSetsDl" readOnly="true">
                 <query>
-                    <![CDATA[select e from DataSet e]]>
+                    <![CDATA[select e from DataSet e order by e.updatedAt desc]]>
                 </query>
             </loader>
         </collection>
@@ -26,19 +25,28 @@
         <action id="discardAction" type="lookup_discard"/>
     </actions>
     <layout>
-        <genericFilter id="genericFilter"
-                       dataLoader="dataSetsDl">
-            <properties include=".*"/>
+        <genericFilter id="genericFilter" dataLoader="dataSetsDl">
+            <properties include="name,status,createdBy"/>
         </genericFilter>
+
         <hbox id="buttonsPanel" classNames="buttons-panel">
             <button id="createButton" action="dataSetsDataGrid.createAction"/>
             <button id="editButton" action="dataSetsDataGrid.editAction"/>
             <button id="removeButton" action="dataSetsDataGrid.removeAction"/>
+            <button id="syncButton"
+                    text="Synchronize"
+                    icon="REFRESH"
+                    enabled="false"/>
+            <button id="bulkSyncButton"
+                    text="Bulk Sync"
+                    icon="COPY"
+                    enabled="false"/>
             <simplePagination id="pagination" dataLoader="dataSetsDl"/>
         </hbox>
+
         <dataGrid id="dataSetsDataGrid"
                   width="100%"
-                  minHeight="20em"
+                  minHeight="25em"
                   dataContainer="dataSetsDc"
                   columnReorderingAllowed="true">
             <actions>
@@ -47,29 +55,17 @@
                 <action id="removeAction" type="list_remove"/>
             </actions>
             <columns resizable="true">
-                <column property="name"/>
-                <column property="description"/>
-                <column property="status"/>
-                <column property="createdBy"/>
-                <column property="createdAt"/>
-                <column property="updatedAt"/>
-                <column property="lastSync"/>
-                <column property="autoSync"/>
-                <column property="syncIntervalHours"/>
-                <column property="defaultMarkup"/>
-                <column property="minProfitMargin"/>
-                <column property="autoPriceUpdate"/>
-                <column property="autoStockUpdate"/>
-                <column property="aiOptimizationEnabled"/>
-                <column property="seoOptimizationEnabled"/>
-                <column property="trendAnalysisEnabled"/>
-                <column property="totalProducts"/>
-                <column property="activeProducts"/>
-                <column property="syncCount"/>
-                <column property="errorCount"/>
-                <column property="lastErrorMessage"/>
+                <column property="name" width="200px"/>
+                <column property="status" width="100px"/>
+                <column property="totalProducts" width="100px" header="Products"/>
+                <column property="activeProducts" width="100px" header="Active"/>
+                <column property="createdBy" width="120px"/>
+                <column property="lastSync" width="150px"/>
+                <column property="createdAt" width="150px"/>
+                <column property="autoSync" width="80px"/>
             </columns>
         </dataGrid>
+
         <hbox id="lookupActions" visible="false">
             <button id="selectButton" action="selectAction"/>
             <button id="discardButton" action="discardAction"/>

@@ -1,7 +1,9 @@
 package com.dropiq.admin.model;
 
 import io.jmix.core.metamodel.datatype.EnumClass;
+import lombok.Getter;
 
+@Getter
 public enum SyncJobStatus implements EnumClass<String> {
     PENDING("Waiting to be processed"),
     RUNNING("Currently processing"),
@@ -14,10 +16,6 @@ public enum SyncJobStatus implements EnumClass<String> {
 
     SyncJobStatus(String description) {
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     @Override

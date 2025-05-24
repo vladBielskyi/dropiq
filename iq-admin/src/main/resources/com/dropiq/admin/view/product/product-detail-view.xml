@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      title="msg://productDetailView.title"
+      title="Edit Product"
       focusComponent="form">
     <data>
         <instance id="productDc"
@@ -16,41 +16,66 @@
         <action id="saveAction" type="detail_saveClose"/>
         <action id="closeAction" type="detail_close"/>
     </actions>
+
     <layout>
-        <formLayout id="form" dataContainer="productDc">
-            <responsiveSteps>
-                <responsiveStep minWidth="0" columns="1"/>
-                <responsiveStep minWidth="40em" columns="2"/>
-            </responsiveSteps>
-            <textField id="externalIdField" property="externalId"/>
-            <textField id="groupIdField" property="groupId"/>
-            <textField id="nameField" property="name"/>
-            <textField id="descriptionField" property="description"/>
-            <textField id="shortDescriptionField" property="shortDescription"/>
-            <textField id="originalPriceField" property="originalPrice"/>
-            <textField id="sellingPriceField" property="sellingPrice"/>
-            <textField id="markupPercentageField" property="markupPercentage"/>
-            <textField id="stockField" property="stock"/>
-            <checkbox id="availableField" property="available"/>
-            <textField id="externalCategoryIdField" property="externalCategoryId"/>
-            <textField id="externalCategoryNameField" property="externalCategoryName"/>
-            <select id="sourceTypeField" property="sourceType"/>
-            <textField id="sourceUrlField" property="sourceUrl"/>
-            <dateTimePicker id="createdAtField" property="createdAt"/>
-            <dateTimePicker id="updatedAtField" property="updatedAt"/>
-            <dateTimePicker id="lastSyncField" property="lastSync"/>
-            <select id="statusField" property="status"/>
-            <checkbox id="aiOptimizedField" property="aiOptimized"/>
-            <textField id="seoTitleField" property="seoTitle"/>
-            <textField id="seoDescriptionField" property="seoDescription"/>
-            <textField id="seoKeywordsField" property="seoKeywords"/>
-            <textField id="trendScoreField" property="trendScore"/>
-            <textField id="competitionLevelField" property="competitionLevel"/>
-            <textField id="profitMarginField" property="profitMargin"/>
-        </formLayout>
-        <hbox id="detailActions">
-            <button id="saveAndCloseButton" action="saveAction"/>
-            <button id="closeButton" action="closeAction"/>
-        </hbox>
+        <vbox width="100%" spacing="true" padding="true">
+
+            <!-- Product Images -->
+            <vbox spacing="false">
+                <h3 text="Product Images"/>
+                <hbox id="imageContainer" spacing="true"/>
+            </vbox>
+
+            <!-- Main Form -->
+            <formLayout id="form" dataContainer="productDc">
+                <responsiveSteps>
+                    <responsiveStep minWidth="0" columns="1"/>
+                    <responsiveStep minWidth="40em" columns="2"/>
+                </responsiveSteps>
+
+                <!-- Basic Info -->
+                <textField id="nameField" property="name" colspan="2" required="true"/>
+                <textArea id="descriptionField" property="description" colspan="2" height="80px"/>
+
+                <!-- Pricing -->
+                <textField id="originalPriceField" property="originalPrice" required="true"/>
+                <textField id="markupPercentageField" property="markupPercentage"
+                           helperText="Markup percentage (e.g., 30 for 30%)"/>
+
+                <textField id="calculatedSellingPriceField"
+                           label="Calculated Selling Price"
+                           readOnly="true"/>
+                <textField id="sellingPriceField" property="sellingPrice" readOnly="true"/>
+
+                <!-- Stock & Availability -->
+                <textField id="stockField" property="stock"/>
+                <checkbox id="availableField" property="available"/>
+
+                <!-- Category & Source -->
+                <textField id="externalCategoryNameField" property="externalCategoryName" readOnly="true"/>
+                <textField id="sourceTypeField" property="sourceType" readOnly="true"/>
+
+                <!-- SEO Fields -->
+                <textField id="seoTitleField" property="seoTitle" colspan="2"/>
+                <textArea id="seoDescriptionField" property="seoDescription" colspan="2" height="60px"/>
+                <textField id="seoKeywordsField" property="seoKeywords" colspan="2"/>
+
+                <!-- Status -->
+                <select id="statusField" property="status"/>
+                <checkbox id="aiOptimizedField" property="aiOptimized"/>
+
+                <!-- System Fields -->
+                <textField id="externalIdField" property="externalId" readOnly="true"/>
+                <textField id="groupIdField" property="groupId" readOnly="true"/>
+                <dateTimePicker id="updatedAtField" property="updatedAt" readOnly="true"/>
+                <dateTimePicker id="lastSyncField" property="lastSync" readOnly="true"/>
+            </formLayout>
+
+            <!-- Actions -->
+            <hbox spacing="true" padding="true">
+                <button id="saveAndCloseButton" action="saveAction" themeNames="primary"/>
+                <button id="closeButton" action="closeAction"/>
+            </hbox>
+        </vbox>
     </layout>
 </view>

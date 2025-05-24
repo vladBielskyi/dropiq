@@ -33,7 +33,7 @@ public class DataSet {
     private String description;
 
     @Column(name = "status")
-    private String status = DataSetStatus.DRAFT.name();
+    private String status;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -123,7 +123,11 @@ public class DataSet {
     }
 
     public DataSetStatus getStatus() {
-        return DataSetStatus.valueOf(status);
+        return status == null ? null : DataSetStatus.valueOf(status);
+    }
+
+    public void setStatus(DataSetStatus status) {
+        this.status = status.name();
     }
 
     private void updateStatistics() {
