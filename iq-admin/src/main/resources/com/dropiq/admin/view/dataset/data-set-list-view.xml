@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
       xmlns:c="http://jmix.io/schema/flowui/jpql-condition"
-      title="msg://productListView.title"
-      focusComponent="productsDataGrid">
+      title="msg://dataSetListView.title"
+      focusComponent="dataSetsDataGrid">
     <data>
-        <collection id="productsDc"
-                    class="com.dropiq.admin.entity.Product">
+        <collection id="dataSetsDc"
+                    class="com.dropiq.admin.entity.DataSet">
             <fetchPlan extends="_base"/>
-            <loader id="productsDl" readOnly="true">
+            <loader id="dataSetsDl" readOnly="true">
                 <query>
-                    <![CDATA[select e from Product e]]>
+                    <![CDATA[select e from DataSet e]]>
                 </query>
             </loader>
         </collection>
@@ -27,19 +27,19 @@
     </actions>
     <layout>
         <genericFilter id="genericFilter"
-                       dataLoader="productsDl">
+                       dataLoader="dataSetsDl">
             <properties include=".*"/>
         </genericFilter>
         <hbox id="buttonsPanel" classNames="buttons-panel">
-            <button id="createButton" action="productsDataGrid.createAction"/>
-            <button id="editButton" action="productsDataGrid.editAction"/>
-            <button id="removeButton" action="productsDataGrid.removeAction"/>
-            <simplePagination id="pagination" dataLoader="productsDl"/>
+            <button id="createButton" action="dataSetsDataGrid.createAction"/>
+            <button id="editButton" action="dataSetsDataGrid.editAction"/>
+            <button id="removeButton" action="dataSetsDataGrid.removeAction"/>
+            <simplePagination id="pagination" dataLoader="dataSetsDl"/>
         </hbox>
-        <dataGrid id="productsDataGrid"
+        <dataGrid id="dataSetsDataGrid"
                   width="100%"
                   minHeight="20em"
-                  dataContainer="productsDc"
+                  dataContainer="dataSetsDc"
                   columnReorderingAllowed="true">
             <actions>
                 <action id="createAction" type="list_create"/>
@@ -47,31 +47,27 @@
                 <action id="removeAction" type="list_remove"/>
             </actions>
             <columns resizable="true">
-                <column property="externalId"/>
-                <column property="groupId"/>
                 <column property="name"/>
                 <column property="description"/>
-                <column property="shortDescription"/>
-                <column property="originalPrice"/>
-                <column property="sellingPrice"/>
-                <column property="markupPercentage"/>
-                <column property="stock"/>
-                <column property="available"/>
-                <column property="externalCategoryId"/>
-                <column property="externalCategoryName"/>
-                <column property="sourceType"/>
-                <column property="sourceUrl"/>
+                <column property="status"/>
+                <column property="createdBy"/>
                 <column property="createdAt"/>
                 <column property="updatedAt"/>
                 <column property="lastSync"/>
-                <column property="status"/>
-                <column property="aiOptimized"/>
-                <column property="seoTitle"/>
-                <column property="seoDescription"/>
-                <column property="seoKeywords"/>
-                <column property="trendScore"/>
-                <column property="competitionLevel"/>
-                <column property="profitMargin"/>
+                <column property="autoSync"/>
+                <column property="syncIntervalHours"/>
+                <column property="defaultMarkup"/>
+                <column property="minProfitMargin"/>
+                <column property="autoPriceUpdate"/>
+                <column property="autoStockUpdate"/>
+                <column property="aiOptimizationEnabled"/>
+                <column property="seoOptimizationEnabled"/>
+                <column property="trendAnalysisEnabled"/>
+                <column property="totalProducts"/>
+                <column property="activeProducts"/>
+                <column property="syncCount"/>
+                <column property="errorCount"/>
+                <column property="lastErrorMessage"/>
             </columns>
         </dataGrid>
         <hbox id="lookupActions" visible="false">

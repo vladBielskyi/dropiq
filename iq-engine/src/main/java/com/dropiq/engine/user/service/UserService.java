@@ -2,8 +2,12 @@ package com.dropiq.engine.user.service;
 
 import com.dropiq.engine.user.entity.User;
 import com.dropiq.engine.user.entity.UserQuota;
+import com.dropiq.engine.user.repository.UserQuotaRepository;
+import com.dropiq.engine.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -169,9 +173,9 @@ public class UserService {
         });
 
         // Get dataset and product counts
-        stats.setTotalDatasets(userRepository.countUserDatasets(userId));
-        stats.setActiveDatasets(userRepository.countActiveUserDatasets(userId));
-        stats.setTotalProducts(userRepository.countUserProducts(userId));
+        stats.setTotalDatasets(userRepository.countUserDatasets(userId.toString()));
+        stats.setActiveDatasets(userRepository.countActiveUserDatasets(userId.toString()));
+        stats.setTotalProducts(userRepository.countUserProducts(userId.toString()));
 
         return stats;
     }

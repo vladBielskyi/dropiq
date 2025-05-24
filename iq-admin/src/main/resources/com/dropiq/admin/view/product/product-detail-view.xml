@@ -1,257 +1,54 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      title="msg://ProductDetailView.title"
+      title="msg://productDetailView.title"
       focusComponent="form">
     <data>
         <instance id="productDc"
                   class="com.dropiq.admin.entity.Product">
-            <fetchPlan extends="_base">
-                <property name="dataset" fetchPlan="_base"/>
-                <property name="imageUrls"/>
-                <property name="attributes"/>
-                <property name="tags"/>
-                <property name="platformSpecificData"/>
-                <property name="exportHistory"/>
-            </fetchPlan>
-            <loader/>
-        </instance>
-        <collection id="datasetsDc"
-                    class="com.dropiq.admin.entity.Dataset">
             <fetchPlan extends="_base"/>
-            <loader id="datasetsDl">
-                <query>
-                    <![CDATA[select d from Dataset d where d.status = 'ACTIVE' order by d.name]]>
-                </query>
-            </loader>
-        </collection>
+            <loader id="productDl"/>
+        </instance>
     </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
     <actions>
         <action id="saveAction" type="detail_saveClose"/>
         <action id="closeAction" type="detail_close"/>
     </actions>
-    <facets>
-        <dataLoadCoordinator auto="true"/>
-    </facets>
     <layout>
-        <tabSheet id="tabSheet" width="100%" height="100%">
-            <!-- Basic Info Tab -->
-            <tab id="basicTab" label="msg://basicInfoTab">
-                <hbox width="100%" height="100%" spacing="true" padding="true">
-                    <!-- Left column - Form -->
-                    <vbox width="60%" spacing="true">
-                        <formLayout id="form" dataContainer="productDc">
-                            <textField id="nameField" property="name" required="true" width="100%"/>
-                            <textArea id="descriptionField" property="description" height="6em" width="100%"/>
-                            <textField id="shortDescriptionField" property="shortDescription" width="100%"/>
-                            <textField id="externalIdField" property="externalId" readOnly="true" width="100%"/>
-                            <comboBox id="datasetField" property="dataset"
-                                      optionsContainer="datasetsDc" width="100%"/>
-                        </formLayout>
-
-                        <details summaryText="msg://categoryAndSource" opened="true">
-                            <formLayout dataContainer="productDc">
-                                <textField id="externalCategoryIdField" property="externalCategoryId"
-                                           readOnly="true" width="200px"/>
-                                <textField id="externalCategoryNameField" property="externalCategoryName"
-                                           width="200px"/>
-                                <textField id="internalCategoryField" property="internalCategory"
-                                           width="200px"/>
-                                <textField id="sourceTypeField" property="sourceType"
-                                           readOnly="true" width="200px"/>
-                                <textField id="sourceUrlField" property="sourceUrl"
-                                           readOnly="true" width="100%"/>
-                            </formLayout>
-                        </details>
-                    </vbox>
-
-                    <!-- Right column - Image and actions -->
-                    <vbox width="40%" spacing="true">
-                        <details summaryText="msg://productImage" opened="true">
-                            <vbox spacing="true" alignItems="CENTER">
-                                <image id="primaryImage"
-                                       resource="${productDc.item.primaryImageUrl}"
-                                       alternateText="Product Image"
-                                       width="200px" height="200px"
-                                       css="object-fit: cover; border-radius: 8px; border: 1px solid var(--lumo-contrast-20pct);"/>
-                                <span text="No Image Available"
-                                      css="color: var(--lumo-disabled-text-color);"/>
-                                <textField id="primaryImageUrlField" property="primaryImageUrl"
-                                           label="msg://primaryImageUrl" width="100%"/>
-                            </vbox>
-                        </details>
-
-                        <details summaryText="msg://quickActions" opened="true">
-                            <vbox spacing="true">
-                                <button id="optimizeButton" text="msg://optimizeWithAI"
-                                        icon="MAGIC" themeNames="primary" width="100%"/>
-                                <button id="calculatePriceButton" text="msg://calculatePrice"
-                                        icon="CALCULATOR" themeNames="success" width="100%"/>
-                                <button id="duplicateButton" text="msg://duplicate"
-                                        icon="COPY" themeNames="tertiary" width="100%"/>
-                            </vbox>
-                        </details>
-                    </vbox>
-                </hbox>
-            </tab>
-
-            <!-- Pricing Tab -->
-            <tab id="pricingTab" label="msg://pricingTab">
-                <vbox padding="true" spacing="true">
-                    <hbox spacing="true" width="100%">
-                        <vbox width="50%" spacing="true">
-                            <h3 text="msg://pricing"/>
-                            <formLayout dataContainer="productDc">
-                                <bigDecimalField id="originalPriceField" property="originalPrice"
-                                                 required="true" width="200px"/>
-                                <bigDecimalField id="sellingPriceField" property="sellingPrice"
-                                                 readOnly="true" width="200px"/>
-                                <bigDecimalField id="markupPercentageField" property="markupPercentage"
-                                                 suffix="%" width="200px"/>
-                                <bigDecimalField id="profitMarginField" property="profitMargin"
-                                                 readOnly="true" suffix="%" width="200px"/>
-                            </formLayout>
-                        </vbox>
-
-                        <vbox width="50%" spacing="true">
-                            <h3 text="msg://inventory"/>
-                            <formLayout dataContainer="productDc">
-                                <textField id="stockField" property="stock" width="150px"/>
-                                <textField id="minStockLevelField" property="minStockLevel" width="150px"/>
-                                <checkbox id="availableField" property="available"/>
-                                <checkbox id="activeField" property="active"/>
-                                <checkbox id="featuredField" property="featured"/>
-                            </formLayout>
-                        </vbox>
-                    </hbox>
-
-                    <details summaryText="msg://priceCalculation" opened="false">
-                        <vbox spacing="true">
-                            <span text="msg://priceFormula"
-                                  style="font-style: italic; color: var(--lumo-secondary-text-color);"/>
-                            <span text="Selling Price = Original Price + (Original Price × Markup %)"
-                                  style="font-family: monospace; background: var(--lumo-contrast-5pct); padding: 8px; border-radius: 4px;"/>
-                        </vbox>
-                    </details>
-                </vbox>
-            </tab>
-
-            <!-- AI Optimization Tab -->
-            <tab id="aiTab" label="msg://aiOptimizationTab">
-                <vbox padding="true" spacing="true">
-                    <hbox spacing="true" alignItems="CENTER">
-                        <h3 text="msg://aiOptimization"/>
-                        <badge id="optimizationStatusBadge"
-                               text="${productDc.item.optimizationStatus}"
-                               variant="SUCCESS"/>
-                        <span flex="1"/>
-                        <button id="startOptimizationButton" text="msg://startOptimization"
-                                icon="PLAY" themeNames="primary"/>
-                    </hbox>
-
-                    <tabSheet width="100%">
-                        <tab id="aiContentTab" label="msg://optimizedContent">
-                            <formLayout dataContainer="productDc">
-                                <textField id="aiOptimizedNameField" property="aiOptimizedName"
-                                           width="100%" readOnly="true"/>
-                                <textArea id="aiOptimizedDescriptionField" property="aiOptimizedDescription"
-                                          height="6em" width="100%" readOnly="true"/>
-                                <textArea id="aiDetectedAttributesField" property="aiDetectedAttributes"
-                                          height="4em" width="100%" readOnly="true"/>
-                            </formLayout>
-                        </tab>
-
-                        <tab id="seoTab" label="msg://seoOptimization">
-                            <formLayout dataContainer="productDc">
-                                <textField id="seoTitleField" property="seoTitle" width="100%"/>
-                                <textArea id="seoDescriptionField" property="seoDescription"
-                                          height="4em" width="100%"/>
-                                <textField id="seoKeywordsField" property="seoKeywords" width="100%"/>
-                                <bigDecimalField id="seoScoreField" property="seoScore"
-                                                 readOnly="true" suffix="/100" width="150px"/>
-                            </formLayout>
-                        </tab>
-
-                        <tab id="analyticsTab" label="msg://analytics">
-                            <formLayout dataContainer="productDc">
-                                <bigDecimalField id="trendScoreField" property="trendScore"
-                                                 readOnly="true" suffix="/100" width="150px"/>
-                                <bigDecimalField id="popularityScoreField" property="popularityScore"
-                                                 readOnly="true" suffix="/100" width="150px"/>
-                                <textField id="competitionLevelField" property="competitionLevel"
-                                           readOnly="true" width="150px"/>
-                                <textField id="viewCountField" property="viewCount"
-                                           readOnly="true" width="150px"/>
-                                <textField id="clickCountField" property="clickCount"
-                                           readOnly="true" width="150px"/>
-                            </formLayout>
-                        </tab>
-                    </tabSheet>
-                </vbox>
-            </tab>
-
-            <!-- Images Tab -->
-            <tab id="imagesTab" label="msg://imagesTab">
-                <vbox padding="true" spacing="true">
-                    <hbox spacing="true" alignItems="CENTER">
-                        <h3 text="msg://productImages"/>
-                        <button id="addImageButton" text="msg://addImage"
-                                icon="PLUS" themeNames="tertiary"/>
-                    </hbox>
-
-                    <!-- Image gallery would go here -->
-                    <span text="msg://imageGalleryPlaceholder"
-                          style="color: var(--lumo-disabled-text-color); font-style: italic;"/>
-                </vbox>
-            </tab>
-
-            <!-- Attributes Tab -->
-            <tab id="attributesTab" label="msg://attributesTab">
-                <vbox padding="true" spacing="true">
-                    <hbox spacing="true" alignItems="CENTER">
-                        <h3 text="msg://productAttributes"/>
-                        <button id="addAttributeButton" text="msg://addAttribute"
-                                icon="PLUS" themeNames="tertiary"/>
-                    </hbox>
-
-                    <!-- Attributes grid would go here -->
-                    <span text="msg://attributesPlaceholder"
-                          style="color: var(--lumo-disabled-text-color); font-style: italic;"/>
-                </vbox>
-            </tab>
-
-            <!-- History Tab -->
-            <tab id="historyTab" label="msg://historyTab">
-                <vbox padding="true" spacing="true">
-                    <formLayout dataContainer="productDc">
-                        <textField id="createdAtField" property="createdAt"
-                                   readOnly="true" width="200px"/>
-                        <textField id="updatedAtField" property="updatedAt"
-                                   readOnly="true" width="200px"/>
-                        <textField id="lastSyncField" property="lastSync"
-                                   readOnly="true" width="200px"/>
-                        <textField id="lastOptimizationField" property="lastOptimization"
-                                   readOnly="true" width="200px"/>
-                        <textField id="createdByField" property="createdBy"
-                                   readOnly="true" width="200px"/>
-                        <textField id="updatedByField" property="updatedBy"
-                                   readOnly="true" width="200px"/>
-                    </formLayout>
-
-                    <details summaryText="msg://exportHistory" opened="false">
-                        <span text="msg://exportHistoryPlaceholder"
-                              style="color: var(--lumo-disabled-text-color); font-style: italic;"/>
-                    </details>
-
-                    <details summaryText="msg://notes" opened="false">
-                        <textArea id="notesField" property="notes"
-                                  height="6em" width="100%"
-                                  placeholder="msg://notesPlaceholder"/>
-                    </details>
-                </vbox>
-            </tab>
-        </tabSheet>
-
-        <hbox id="detailActions" padding="true" spacing="true">
+        <formLayout id="form" dataContainer="productDc">
+            <responsiveSteps>
+                <responsiveStep minWidth="0" columns="1"/>
+                <responsiveStep minWidth="40em" columns="2"/>
+            </responsiveSteps>
+            <textField id="externalIdField" property="externalId"/>
+            <textField id="groupIdField" property="groupId"/>
+            <textField id="nameField" property="name"/>
+            <textField id="descriptionField" property="description"/>
+            <textField id="shortDescriptionField" property="shortDescription"/>
+            <textField id="originalPriceField" property="originalPrice"/>
+            <textField id="sellingPriceField" property="sellingPrice"/>
+            <textField id="markupPercentageField" property="markupPercentage"/>
+            <textField id="stockField" property="stock"/>
+            <checkbox id="availableField" property="available"/>
+            <textField id="externalCategoryIdField" property="externalCategoryId"/>
+            <textField id="externalCategoryNameField" property="externalCategoryName"/>
+            <select id="sourceTypeField" property="sourceType"/>
+            <textField id="sourceUrlField" property="sourceUrl"/>
+            <dateTimePicker id="createdAtField" property="createdAt"/>
+            <dateTimePicker id="updatedAtField" property="updatedAt"/>
+            <dateTimePicker id="lastSyncField" property="lastSync"/>
+            <select id="statusField" property="status"/>
+            <checkbox id="aiOptimizedField" property="aiOptimized"/>
+            <textField id="seoTitleField" property="seoTitle"/>
+            <textField id="seoDescriptionField" property="seoDescription"/>
+            <textField id="seoKeywordsField" property="seoKeywords"/>
+            <textField id="trendScoreField" property="trendScore"/>
+            <textField id="competitionLevelField" property="competitionLevel"/>
+            <textField id="profitMarginField" property="profitMargin"/>
+        </formLayout>
+        <hbox id="detailActions">
             <button id="saveAndCloseButton" action="saveAction"/>
             <button id="closeButton" action="closeAction"/>
         </hbox>

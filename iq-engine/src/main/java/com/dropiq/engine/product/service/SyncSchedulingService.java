@@ -37,7 +37,8 @@ public class SyncSchedulingService {
     private final SyncHistoryRepository syncHistoryRepository;
     private final DataSetService dataSetService;
     private final UserService userService;
-    private final ExecutorService executorService;
+
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Value("${sync.max-concurrent-jobs:5}")
     private int maxConcurrentJobs;
@@ -125,7 +126,7 @@ public class SyncSchedulingService {
 
         LocalDateTime now = LocalDateTime.now();
         List<SyncJob> pendingJobs = syncJobRepository.findJobsToProcess(
-                SyncJobStatus.PENDING, now, maxConcurrentJobs - runningJobs.size()
+                SyncJobStatus.PENDING, now, Pageable.ofSize(maxConcurrentJobs - runningJobs.size())
         );
 
         for (SyncJob job : pendingJobs) {

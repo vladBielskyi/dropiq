@@ -5,6 +5,8 @@ import com.dropiq.engine.integration.exp.model.ProductVariantGroup;
 import com.dropiq.engine.integration.exp.model.SourceType;
 import com.dropiq.engine.integration.exp.model.UnifiedProduct;
 import com.dropiq.engine.integration.exp.service.UnifiedProductService;
+import com.dropiq.engine.product.entity.DataSet;
+import com.dropiq.engine.product.service.DataSetService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -26,9 +28,32 @@ public class UnifiedProductServiceTest {
     @Autowired
     private UnifiedProductService service;
 
+    @Autowired
+    private DataSetService dataSetService;
+
     // Test URLs
     private static final String EASYDROP_URL = "https://easydrop.one/prom-export?key=96368875021347&pid=55541082991053";
     private static final String MYDROP_URL = "https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=3c15e1e3250f59d703bc88175921945f778d68ca&price_field=price&param_name=Размер&stock_sync=true&only_available=true&static_sizes=true";
+
+    @Test
+    public void dataSet() {
+        DataSourceConfig easyConfig = new DataSourceConfig();
+        easyConfig.setUrl(EASYDROP_URL);
+        easyConfig.setPlatformType(SourceType.EASYDROP);
+        easyConfig.setHeaders(Map.of());
+
+        DataSourceConfig myConfig = new DataSourceConfig();
+        easyConfig.setUrl(MYDROP_URL);
+        easyConfig.setPlatformType(SourceType.MYDROP);
+        easyConfig.setHeaders(Map.of());
+
+        DataSet dataSet =
+                dataSetService
+                        .createDatasetFromSources("Test", "Test", "Vlad", List.of(easyConfig, myConfig));
+
+        System.out.println(dataSetService.getDatasetStatistics(dataSet.getId(), "vlad"));
+
+    }
 
     @Test
     @DisplayName("Test 1: Fetch products from EasyDrop platform")

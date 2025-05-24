@@ -1,11 +1,11 @@
 package com.dropiq.admin.entity;
 
-import com.dropiq.admin.model.DatasetStatus;
-import io.jmix.core.entity.annotation.JmixGeneratedValue;
+import com.dropiq.admin.model.DataSetStatus;
+import com.dropiq.admin.model.ProductStatus;
+import com.dropiq.admin.model.SourceType;
 import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,136 +13,152 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Setter
-@Getter
 @JmixEntity
 @Entity
-@Table(name = "DATASET")
+@Table(name = "dataset")
+@Getter
+@Setter
 public class DataSet {
 
+    @Column(nullable = false)
     @Id
-    @Column(name = "ID")
-    @JmixGeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Version
-    @Column(name = "VERSION", nullable = false)
-    private Integer version;
-
-    @NotNull
-    @Column(name = "NAME", nullable = false)
+    @InstanceName
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "DESCRIPTION", length = 1000)
+    @Column(name = "description", length = 1000)
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS")
-    private DatasetStatus status = DatasetStatus.DRAFT;
+    @Column(name = "status")
+    private String status = DataSetStatus.DRAFT.name();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "DATA_SOURCE_ID")
-    private DataSource dataSource;
-
-    @Column(name = "CREATED_BY")
+    @Column(name = "created_by")
     private String createdBy;
 
-    @Column(name = "CREATED_AT")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "UPDATED_AT")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "LAST_SYNC")
+    @Column(name = "last_sync")
     private LocalDateTime lastSync;
 
-    @Column(name = "AUTO_SYNC")
+    @Column(name = "auto_sync")
     private Boolean autoSync = false;
 
-    @Column(name = "SYNC_INTERVAL_HOURS")
+    @Column(name = "sync_interval_hours")
     private Integer syncIntervalHours = 24;
 
-    // Business logic fields
-    @Column(name = "DEFAULT_MARKUP", precision = 5, scale = 2)
-    private BigDecimal defaultMarkup = BigDecimal.valueOf(30);
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "dataset_products",
+            joinColumns = @JoinColumn(name = "dataset_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id", referencedColumnName = "id")
+    )
+    private Set<Product> products = new HashSet<>();
 
-    @Column(name = "MIN_PROFIT_MARGIN", precision = 5, scale = 2)
-    private BigDecimal minProfitMargin = BigDecimal.valueOf(20);
-
-    @Column(name = "AUTO_PRICE_UPDATE")
-    private Boolean autoPriceUpdate = false;
-
-    @Column(name = "AUTO_STOCK_UPDATE")
-    private Boolean autoStockUpdate = true;
-
-    // AI Features
-    @Column(name = "AI_OPTIMIZATION_ENABLED")
-    private Boolean aiOptimizationEnabled = false;
-
-    @Column(name = "SEO_OPTIMIZATION_ENABLED")
-    private Boolean seoOptimizationEnabled = false;
-
-    @Column(name = "TREND_ANALYSIS_ENABLED")
-    private Boolean trendAnalysisEnabled = false;
-
-    @Column(name = "AUTO_CATEGORIZATION")
-    private Boolean autoCategorization = false;
-
-    @Column(name = "IMAGE_ANALYSIS_ENABLED")
-    private Boolean imageAnalysisEnabled = false;
-
-    // Statistics
-    @Column(name = "TOTAL_PRODUCTS")
-    private Integer totalProducts = 0;
-
-    @Column(name = "ACTIVE_PRODUCTS")
-    private Integer activeProducts = 0;
-
-    @Column(name = "OPTIMIZED_PRODUCTS")
-    private Integer optimizedProducts = 0;
-
-    @Column(name = "EXPORTED_PRODUCTS")
-    private Integer exportedProducts = 0;
-
-    @Column(name = "SYNC_COUNT")
-    private Integer syncCount = 0;
-
-    @Column(name = "ERROR_COUNT")
-    private Integer errorCount = 0;
-
-    @Column(name = "LAST_ERROR_MESSAGE", length = 2000)
-    private String lastErrorMessage;
-
-    // Metadata
     @ElementCollection
-    @CollectionTable(name = "DATASET_METADATA", joinColumns = @JoinColumn(name = "DATASET_ID"))
-    @MapKeyColumn(name = "META_KEY")
-    @Column(name = "META_VALUE")
+    @CollectionTable(name = "dataset_sources", joinColumns = @JoinColumn(name = "dataset_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type")
+    private Set<SourceType> sourcePlatforms = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "dataset_metadata", joinColumns = @JoinColumn(name = "dataset_id"))
+    @MapKeyColumn(name = "meta_key")
+    @Column(name = "meta_value")
     private Map<String, String> metadata = new HashMap<>();
 
-    @ElementCollection
-    @CollectionTable(name = "DATASET_TAGS", joinColumns = @JoinColumn(name = "DATASET_ID"))
-    @Column(name = "TAG")
-    private Set<String> tags = new HashSet<>();
+    @Column(name = "default_markup", precision = 5, scale = 2)
+    private BigDecimal defaultMarkup = BigDecimal.valueOf(30);
 
-    // One-to-many relationship with products
-    @OneToMany(mappedBy = "dataset", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Product> products = new ArrayList<>();
+    @Column(name = "min_profit_margin", precision = 5, scale = 2)
+    private BigDecimal minProfitMargin = BigDecimal.valueOf(20);
+
+    @Column(name = "auto_price_update")
+    private Boolean autoPriceUpdate = false;
+
+    @Column(name = "auto_stock_update")
+    private Boolean autoStockUpdate = true;
+
+    @Column(name = "ai_optimization_enabled")
+    private Boolean aiOptimizationEnabled = false;
+
+    @Column(name = "seo_optimization_enabled")
+    private Boolean seoOptimizationEnabled = false;
+
+    @Column(name = "trend_analysis_enabled")
+    private Boolean trendAnalysisEnabled = false;
+
+    @Column(name = "total_products")
+    private Integer totalProducts = 0;
+
+    @Column(name = "active_products")
+    private Integer activeProducts = 0;
+
+    @Column(name = "sync_count")
+    private Integer syncCount = 0;
+
+    @Column(name = "error_count")
+    private Integer errorCount = 0;
+
+    @Column(name = "last_error_message", length = 2000)
+    private String lastErrorMessage;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        updateStatistics();
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        updateStatistics();
     }
 
-    @InstanceName
-    public String getName() {
-        return name;
+    public DataSetStatus getStatus() {
+        return DataSetStatus.valueOf(status);
     }
 
+    private void updateStatistics() {
+        totalProducts = products.size();
+        activeProducts = (int) products.stream()
+                .filter(p -> Objects.equals(p.getStatus(), ProductStatus.ACTIVE.name()))
+                .count();
+    }
+
+    public void addProduct(Product product) {
+        products.add(product);
+        product.getDatasets().add(this);
+        sourcePlatforms.add(product.getSourceType());
+        updateStatistics();
+    }
+
+    public void removeProduct(Product product) {
+        products.remove(product);
+        product.getDatasets().remove(this);
+        updateStatistics();
+    }
+
+    public void addProducts(List<Product> productList) {
+        for (Product product : productList) {
+            addProduct(product);
+        }
+    }
+
+    public int getProductCount() {
+        return products.size();
+    }
+
+    public boolean containsProduct(String externalId, SourceType sourceType) {
+        return products.stream()
+                .anyMatch(p -> p.getExternalId().equals(externalId) &&
+                        p.getSourceType().equals(sourceType));
+    }
 }
