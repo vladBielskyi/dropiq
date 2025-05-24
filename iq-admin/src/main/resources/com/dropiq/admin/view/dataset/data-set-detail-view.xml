@@ -12,13 +12,14 @@
         </instance>
 
         <collection id="treeItemsDc"
-                    class="com.dropiq.admin.entity.ProductTreeItem">
-            <loader id="treeItemsDl" readOnly="true"/>
+                    class="com.dropiq.admin.model.ProductTreeItem">
         </collection>
     </data>
+
     <facets>
         <dataLoadCoordinator auto="true"/>
     </facets>
+
     <actions>
         <action id="saveAction" type="detail_saveClose"/>
         <action id="closeAction" type="detail_close"/>
@@ -74,7 +75,6 @@
                             <button id="toggleFiltersButton"
                                     text="Show Filters"
                                     icon="ANGLE_DOWN"/>
-                            <separator/>
                             <button id="expandAllButton"
                                     text="Expand All"
                                     icon="PLUS"
@@ -85,10 +85,9 @@
                                     themeNames="tertiary"/>
                         </hbox>
 
-                        <!-- Advanced Filters Container -->
-                        <div id="filtersContainer" visible="false" className="filters-container">
+                        <!-- Filters Container -->
+                        <div id="filtersContainer" visible="false">
                             <vbox spacing="true" padding="true">
-
                                 <!-- Basic Text Filters -->
                                 <hbox spacing="true" alignItems="END">
                                     <textField id="nameFilter"
@@ -117,4 +116,87 @@
 
                                 <!-- Price Filters -->
                                 <hbox spacing="true" alignItems="END">
-                                    <textField id="
+                                    <textField id="minPriceFilter"
+                                               label="Min Price"
+                                               placeholder="Min price..."
+                                               width="150px"/>
+                                    <textField id="maxPriceFilter"
+                                               label="Max Price"
+                                               placeholder="Max price..."
+                                               width="150px"/>
+                                </hbox>
+
+                                <!-- Stock Filters -->
+                                <hbox spacing="true" alignItems="END">
+                                    <textField id="minStockFilter"
+                                               label="Min Stock"
+                                               placeholder="Min stock..."
+                                               width="150px"/>
+                                    <textField id="maxStockFilter"
+                                               label="Max Stock"
+                                               placeholder="Max stock..."
+                                               width="150px"/>
+                                    <checkbox id="availableOnlyFilter"
+                                              label="Available Only"/>
+                                </hbox>
+
+                                <!-- AI/SEO Filters -->
+                                <hbox spacing="true" alignItems="END">
+                                    <checkbox id="aiOptimizedOnlyFilter"
+                                              label="AI Optimized Only"/>
+                                    <checkbox id="hasImagesFilter"
+                                              label="Has Images"/>
+                                    <checkbox id="hasGroupIdFilter"
+                                              label="Has Group ID"/>
+                                </hbox>
+
+                                <!-- Filter Actions -->
+                                <hbox spacing="true" alignItems="CENTER">
+                                    <button id="applyFiltersButton"
+                                            text="Apply Filters"
+                                            icon="SEARCH"
+                                            themeNames="primary"/>
+                                    <button id="clearFiltersButton"
+                                            text="Clear All"
+                                            icon="CLOSE"
+                                            themeNames="tertiary"/>
+                                </hbox>
+                            </vbox>
+                        </div>
+
+                        <!-- Tree Grid for Products -->
+                        <treeDataGrid id="productsTreeGrid"
+                                      width="100%"
+                                      height="100%"
+                                      dataContainer="treeItemsDc"
+                                      hierarchyProperty="children"
+                                      selectionMode="MULTI"
+                                      columnReorderingAllowed="true"
+                                      detailsVisibleOnClick="true">
+                        </treeDataGrid>
+
+                        <!-- Product Action Buttons -->
+                        <hbox spacing="true" alignItems="CENTER">
+                            <button id="editProductButton"
+                                    text="Edit Product"
+                                    icon="EDIT"
+                                    enabled="false"
+                                    themeNames="primary"/>
+                            <button id="archiveSelectedButton"
+                                    text="Archive Selected"
+                                    icon="ARCHIVE"
+                                    enabled="false"
+                                    themeNames="error"/>
+                        </hbox>
+                    </vbox>
+                </tab>
+            </tabSheet>
+
+            <!-- Action Buttons -->
+            <hbox spacing="true" padding="true">
+                <button id="saveAndCloseButton" action="saveAction" themeNames="primary"/>
+                <button id="closeButton" action="closeAction"/>
+            </hbox>
+        </vbox>
+    </layout>
+</view>

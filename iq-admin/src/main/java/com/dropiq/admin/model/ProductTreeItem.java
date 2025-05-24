@@ -2,6 +2,7 @@ package com.dropiq.admin.model;
 
 import com.dropiq.admin.entity.Product;
 import com.dropiq.admin.model.SourceType;
+import io.jmix.core.metamodel.annotation.JmixEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,13 +15,14 @@ import java.util.List;
  */
 @Getter
 @Setter
+@JmixEntity
 public class ProductTreeItem {
 
     private String id;
     private String name;
     private String displayName;
     private ProductTreeItemType type;
-    private Object data; // Can be Product or grouping info
+    private Product data; // Can be Product or grouping info
     private List<ProductTreeItem> children = new ArrayList<>();
     private ProductTreeItem parent;
 
@@ -28,7 +30,7 @@ public class ProductTreeItem {
     private SourceType sourceType;
     private String groupId;
     private String category;
-    private int productCount;
+    private Integer productCount;
     private BigDecimal totalValue;
 
     public enum ProductTreeItemType {
