@@ -69,14 +69,12 @@
                         <details summaryText="msg://productImage" opened="true">
                             <vbox spacing="true" alignItems="CENTER">
                                 <image id="primaryImage"
-                                       src="${productDc.item.primaryImageUrl}"
+                                       resource="${productDc.item.primaryImageUrl}"
                                        alternateText="Product Image"
                                        width="200px" height="200px"
-                                       visible="${productDc.item.primaryImageUrl != null}"
-                                       style="object-fit: cover; border-radius: 8px; border: 1px solid var(--lumo-contrast-20pct);"/>
+                                       css="object-fit: cover; border-radius: 8px; border: 1px solid var(--lumo-contrast-20pct);"/>
                                 <span text="No Image Available"
-                                      visible="${productDc.item.primaryImageUrl == null}"
-                                      style="color: var(--lumo-disabled-text-color);"/>
+                                      css="color: var(--lumo-disabled-text-color);"/>
                                 <textField id="primaryImageUrlField" property="primaryImageUrl"
                                            label="msg://primaryImageUrl" width="100%"/>
                             </vbox>

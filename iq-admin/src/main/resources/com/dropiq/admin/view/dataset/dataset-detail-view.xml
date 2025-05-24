@@ -54,7 +54,7 @@
                 <vbox padding="true" spacing="true">
                     <!-- Dataset Stats Component -->
                     <hbox id="statsContainer" spacing="true" width="100%"
-                          style="background: var(--lumo-contrast-5pct); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                          css="background: var(--lumo-contrast-5pct); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                         <!-- Stats cards will be populated programmatically -->
                     </hbox>
 
@@ -62,7 +62,7 @@
                         <textField id="nameField" property="name" required="true" width="100%"/>
                         <textArea id="descriptionField" property="description" height="4em" width="100%"/>
                         <comboBox id="dataSourceField" property="dataSource"
-                                  optionsContainer="dataSourcesDc" required="true" width="100%"/>
+                                  colspan="dataSourcesDc" required="true" width="100%"/>
                         <comboBox id="statusField" property="status" width="200px"/>
                     </formLayout>
 
@@ -83,9 +83,9 @@
                     <details summaryText="msg://pricingSettings" opened="true">
                         <formLayout dataContainer="datasetDc">
                             <bigDecimalField id="defaultMarkupField" property="defaultMarkup"
-                                             suffix="%" width="200px"/>
+                                             width="200px"/>
                             <bigDecimalField id="minProfitMarginField" property="minProfitMargin"
-                                             suffix="%" width="200px"/>
+                                              width="200px"/>
                             <checkbox id="autoPriceUpdateField" property="autoPriceUpdate"/>
                             <checkbox id="autoStockUpdateField" property="autoStockUpdate"/>
                         </formLayout>
@@ -117,8 +117,7 @@
                     <!-- Products Header -->
                     <hbox spacing="true" alignItems="CENTER" width="100%">
                         <h3 text="msg://productsInDataset"/>
-                        <badge id="productCountBadge" text="0" variant="PRIMARY"/>
-                        <span flex="1"/>
+<!--                        <badge id="productCountBadge" text="0" variant="PRIMARY"/>-->
 
                         <!-- Product Actions -->
                         <button id="filterProductsButton" text="msg://filter"
@@ -135,7 +134,7 @@
                               height="100%"
                               columnReorderingAllowed="true"
                               dataContainer="productsDc"
-                              multiSelect="true">
+                              selectionMode="MULTI">
                         <actions>
                             <action id="editAction" type="list_edit"/>
                             <action id="activateSelectedAction" text="msg://activateSelected" icon="PLAY"/>
@@ -144,56 +143,55 @@
                         </actions>
                         <columns resizable="true">
                             <column key="image" width="60px" header="" textAlign="CENTER">
-                                <template>
-                                    <image src="${item.primaryImageUrl}"
-                                           alternateText="Product"
-                                           width="40px" height="40px"
-                                           visible="${item.primaryImageUrl != null}"
-                                           style="object-fit: cover; border-radius: 4px;"/>
-                                    <span text="📷" visible="${item.primaryImageUrl == null}"
-                                          style="font-size: 16px; color: var(--lumo-disabled-text-color);"/>
-                                </template>
+<!--                                <template>-->
+<!--                                    <image src="${item.primaryImageUrl}"-->
+<!--                                           alternateText="Product"-->
+<!--                                           width="40px" height="40px"-->
+<!--                                           visible="${item.primaryImageUrl != null}"-->
+<!--                                           style="object-fit: cover; border-radius: 4px;"/>-->
+<!--                                    <span text="📷" visible="${item.primaryImageUrl == null}"-->
+<!--                                          style="font-size: 16px; color: var(&#45;&#45;lumo-disabled-text-color);"/>-->
+<!--                                </template>-->
                             </column>
                             <column property="name" width="200px" sortable="true"/>
                             <column property="originalPrice" width="100px" header="msg://originalPrice" textAlign="END"/>
                             <column property="sellingPrice" width="100px" header="msg://sellingPrice" textAlign="END"/>
                             <column property="markupPercentage" width="80px" header="%" textAlign="CENTER">
-                                <template>
-                                    <span text="${item.markupPercentage}%"
-                                          visible="${item.markupPercentage != null}"/>
-                                </template>
+<!--                                <template>-->
+<!--                                    <span text="${item.markupPercentage}%"-->
+<!--                                          visible="${item.markupPercentage != null}"/>-->
+<!--                                </template>-->
                             </column>
                             <column property="stock" width="60px" textAlign="CENTER"/>
                             <column property="available" width="80px" textAlign="CENTER">
-                                <template>
-                                    <icon icon="${item.available ? 'CHECK' : 'CLOSE'}"
-                                          style="color: ${item.available ? 'var(--lumo-success-color)' : 'var(--lumo-error-color)'}"/>
-                                </template>
+<!--                                <template>-->
+<!--                                    <icon icon="${item.available ? 'CHECK' : 'CLOSE'}"-->
+<!--                                          style="color: ${item.available ? 'var(&#45;&#45;lumo-success-color)' : 'var(&#45;&#45;lumo-error-color)'}"/>-->
+<!--                                </template>-->
                             </column>
                             <column property="active" width="60px" textAlign="CENTER">
-                                <template>
-                                    <icon icon="${item.active ? 'CHECK' : 'CLOSE'}"
-                                          style="color: ${item.active ? 'var(--lumo-success-color)' : 'var(--lumo-error-color)'}"/>
-                                </template>
+<!--                                <template>-->
+<!--                                    <icon icon="${item.active ? 'CHECK' : 'CLOSE'}"-->
+<!--                                          style="color: ${item.active ? 'var(&#45;&#45;lumo-success-color)' : 'var(&#45;&#45;lumo-error-color)'}"/>-->
+<!--                                </template>-->
                             </column>
                             <column property="optimizationStatus" width="100px" textAlign="CENTER"/>
                             <column key="actions" width="80px" header="" textAlign="CENTER">
-                                <template>
-                                    <hbox spacing="XS">
-                                        <button icon="EDIT" themeNames="tertiary-inline small"
-                                                title="msg://editProduct"
-                                                action="productsDataGrid.editAction"/>
-                                    </hbox>
-                                </template>
+<!--                                <template>-->
+<!--                                    <hbox spacing="XS">-->
+<!--                                        <button icon="EDIT" themeNames="tertiary-inline small"-->
+<!--                                                title="msg://editProduct"-->
+<!--                                                action="productsDataGrid.editAction"/>-->
+<!--                                    </hbox>-->
+<!--                                </template>-->
                             </column>
                         </columns>
                     </dataGrid>
 
                     <!-- Products Footer -->
                     <hbox spacing="true" alignItems="CENTER" width="100%">
-                        <span text="msg://selectedProducts" style="color: var(--lumo-secondary-text-color);"/>
-                        <span id="selectedCountLabel" text="0" style="font-weight: bold;"/>
-                        <span flex="1"/>
+                        <span text="msg://selectedProducts" css="color: var(--lumo-secondary-text-color);"/>
+                        <span id="selectedCountLabel" text="0" css="font-weight: bold;"/>
 
                         <!-- Quick Actions for Selected -->
                         <button id="activateSelectedButton" text="msg://activate"

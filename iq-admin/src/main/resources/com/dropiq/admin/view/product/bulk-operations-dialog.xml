@@ -12,7 +12,6 @@
                           width="100%"/>
                 <bigDecimalField id="markupPercentageField"
                                  label="msg://markupPercentage"
-                                 suffix="%"
                                  width="200px"
                                  visible="false"/>
                 <textField id="categoryField"
@@ -24,11 +23,10 @@
             <details summaryText="msg://operationDetails" opened="false">
                 <span id="operationDescription"
                       text="msg://selectOperationFirst"
-                      style="color: var(--lumo-secondary-text-color); font-style: italic;"/>
+                      css="color: var(--lumo-secondary-text-color); font-style: italic;"/>
             </details>
 
             <hbox spacing="true" alignItems="END">
-                <span flex="1"/>
                 <button id="executeButton"
                         text="msg://execute"
                         icon="PLAY"

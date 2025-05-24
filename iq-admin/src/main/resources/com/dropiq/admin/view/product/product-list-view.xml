@@ -67,7 +67,7 @@
                   columnReorderingAllowed="true"
                   minHeight="30em"
                   dataContainer="productsDc"
-                  multiSelect="true">
+                  selectionMode="MULTI">
             <actions>
                 <action id="createAction" type="list_create"/>
                 <action id="editAction" type="list_edit"/>
@@ -80,61 +80,61 @@
             </actions>
             <columns resizable="true">
                 <column key="image" width="80px" header="msg://image" textAlign="CENTER">
-                    <template>
-                        <image src="${item.primaryImageUrl}"
-                               alternateText="Product Image"
-                               width="50px" height="50px"
-                               visible="${item.primaryImageUrl != null}"
-                               style="object-fit: cover; border-radius: 4px;"/>
-                        <span text="📷" visible="${item.primaryImageUrl == null}"
-                              style="font-size: 24px; color: var(--lumo-disabled-text-color);"/>
-                    </template>
+<!--                    <template>-->
+<!--                        <image src="${item.primaryImageUrl}"-->
+<!--                               alternateText="Product Image"-->
+<!--                               width="50px" height="50px"-->
+<!--                               visible="${item.primaryImageUrl != null}"-->
+<!--                               style="object-fit: cover; border-radius: 4px;"/>-->
+<!--                        <span text="📷" visible="${item.primaryImageUrl == null}"-->
+<!--                              style="font-size: 24px; color: var(&#45;&#45;lumo-disabled-text-color);"/>-->
+<!--                    </template>-->
                 </column>
                 <column property="name" width="250px" sortable="true"/>
                 <column property="externalCategoryName" width="150px" header="msg://category" sortable="true"/>
                 <column property="originalPrice" width="120px" header="msg://originalPrice" textAlign="END" sortable="true"/>
                 <column property="sellingPrice" width="120px" header="msg://sellingPrice" textAlign="END" sortable="true"/>
                 <column property="markupPercentage" width="100px" header="msg://markup" textAlign="CENTER" sortable="true">
-                    <template>
-                        <span text="${item.markupPercentage}%"
-                              visible="${item.markupPercentage != null}"/>
-                    </template>
+<!--                    <template>-->
+<!--                        <span text="${item.markupPercentage}%"-->
+<!--                              visible="${item.markupPercentage != null}"/>-->
+<!--                    </template>-->
                 </column>
                 <column property="stock" width="80px" textAlign="CENTER" sortable="true"/>
                 <column property="available" width="100px" header="msg://available" textAlign="CENTER">
-                    <template>
-                        <icon icon="${item.available ? 'CHECK' : 'CLOSE'}"
-                              style="color: ${item.available ? 'var(--lumo-success-color)' : 'var(--lumo-error-color)'}"/>
-                    </template>
+<!--                    <template>-->
+<!--                        <icon icon="${item.available ? 'CHECK' : 'CLOSE'}"-->
+<!--                              style="color: ${item.available ? 'var(&#45;&#45;lumo-success-color)' : 'var(&#45;&#45;lumo-error-color)'}"/>-->
+<!--                    </template>-->
                 </column>
                 <column property="active" width="80px" textAlign="CENTER">
-                    <template>
-                        <icon icon="${item.active ? 'CHECK' : 'CLOSE'}"
-                              style="color: ${item.active ? 'var(--lumo-success-color)' : 'var(--lumo-error-color)'}"/>
-                    </template>
+<!--                    <template>-->
+<!--                        <icon icon="${item.active ? 'CHECK' : 'CLOSE'}"-->
+<!--                              style="color: ${item.active ? 'var(&#45;&#45;lumo-success-color)' : 'var(&#45;&#45;lumo-error-color)'}"/>-->
+<!--                    </template>-->
                 </column>
                 <column property="sourceType" width="100px" header="msg://source" sortable="true"/>
                 <column property="optimizationStatus" width="120px" header="msg://optimization" sortable="true"/>
                 <column key="scores" width="120px" header="msg://scores" textAlign="CENTER">
-                    <template>
-                        <vbox spacing="XS">
-                            <span text="SEO: ${item.seoScore}"
-                                  visible="${item.seoScore != null}"
-                                  style="font-size: 11px;"/>
-                            <span text="Trend: ${item.trendScore}"
-                                  visible="${item.trendScore != null}"
-                                  style="font-size: 11px;"/>
-                        </vbox>
-                    </template>
+<!--                    <template>-->
+<!--                        <vbox spacing="XS">-->
+<!--                            <span text="SEO: ${item.seoScore}"-->
+<!--                                  visible="${item.seoScore != null}"-->
+<!--                                  style="font-size: 11px;"/>-->
+<!--                            <span text="Trend: ${item.trendScore}"-->
+<!--                                  visible="${item.trendScore != null}"-->
+<!--                                  style="font-size: 11px;"/>-->
+<!--                        </vbox>-->
+<!--                    </template>-->
                 </column>
                 <column key="flags" width="100px" header="msg://flags" textAlign="CENTER">
-                    <template>
-                        <hbox spacing="XS">
-                            <span text="🤖" visible="${item.aiOptimized}" title="AI Optimized"/>
-                            <span text="⭐" visible="${item.featured}" title="Featured"/>
-                            <span text="🔥" visible="${item.trendScore != null and item.trendScore >= 80}" title="Trending"/>
-                        </hbox>
-                    </template>
+<!--                    <template>-->
+<!--                        <hbox spacing="XS">-->
+<!--                            <span text="🤖" visible="${item.aiOptimized}" title="AI Optimized"/>-->
+<!--                            <span text="⭐" visible="${item.featured}" title="Featured"/>-->
+<!--                            <span text="🔥" visible="${item.trendScore != null and item.trendScore >= 80}" title="Trending"/>-->
+<!--                        </hbox>-->
+<!--                    </template>-->
                 </column>
                 <column property="updatedAt" width="150px" sortable="true"/>
             </columns>
