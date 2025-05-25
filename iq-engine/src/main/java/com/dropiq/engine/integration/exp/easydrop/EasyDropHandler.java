@@ -1,5 +1,6 @@
-package com.dropiq.engine.integration.exp.handler;
+package com.dropiq.engine.integration.exp.easydrop;
 
+import com.dropiq.engine.integration.exp.PlatformHandler;
 import com.dropiq.engine.integration.exp.model.Category;
 import com.dropiq.engine.integration.exp.model.SourceType;
 import com.dropiq.engine.integration.exp.model.UnifiedProduct;
@@ -205,14 +206,16 @@ public class EasyDropHandler extends PlatformHandler {
                 log.debug("Error getting platform specific data: {}", e.getMessage());
             }
 
-            // Image URL
+            // Image URLs - use improved method to collect all images
             try {
-                String imageUrl = getElementTextContent(element, "image");
-                if (imageUrl != null && !imageUrl.isEmpty()) {
-                    product.getImageUrls().add(imageUrl);
-                }
+                List<String> imageUrls = getAllImageUrls(element, "image", "picture", "gallery", "photos", "img");
+                product.getImageUrls().addAll(imageUrls);
+
+                log.debug("Found {} images for product {}: {}",
+                        imageUrls.size(), product.getName(), imageUrls);
+
             } catch (Exception e) {
-                log.debug("Error getting image URL: {}", e.getMessage());
+                log.debug("Error getting image URLs: {}", e.getMessage());
             }
 
             // Parse attributes

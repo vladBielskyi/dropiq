@@ -1,6 +1,6 @@
 package com.dropiq.engine.integration.exp.service;
 
-import com.dropiq.engine.integration.exp.handler.PlatformHandler;
+import com.dropiq.engine.integration.exp.PlatformHandler;
 import com.dropiq.engine.integration.exp.model.DataSourceConfig;
 import com.dropiq.engine.integration.exp.model.ProductVariantGroup;
 import com.dropiq.engine.integration.exp.model.SourceType;

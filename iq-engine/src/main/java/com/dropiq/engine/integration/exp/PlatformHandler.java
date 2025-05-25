@@ -1,4 +1,4 @@
-package com.dropiq.engine.integration.exp.handler;
+package com.dropiq.engine.integration.exp;
 
 import com.dropiq.engine.integration.exp.model.Category;
 import com.dropiq.engine.integration.exp.model.SourceType;
@@ -19,10 +19,8 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -119,6 +117,76 @@ public abstract class PlatformHandler {
         Element root = doc.createElement("empty");
         doc.appendChild(root);
         return doc;
+    }
+
+    /**
+     * Get all image URLs from element with comprehensive safety checks
+     * Supports multiple image tag names and formats
+     */
+    protected List<String> getAllImageUrls(Element element, String... tagNames) {
+        List<String> imageUrls = new ArrayList<>();
+
+        if (element == null || tagNames == null) {
+            return imageUrls;
+        }
+
+        try {
+            for (String tagName : tagNames) {
+                try {
+                    NodeList nodeList = element.getElementsByTagName(tagName);
+                    if (nodeList != null && nodeList.getLength() > 0) {
+                        for (int i = 0; i < nodeList.getLength(); i++) {
+                            try {
+                                Node node = nodeList.item(i);
+                                if (node != null) {
+                                    String imageUrl = node.getTextContent();
+                                    if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                                        // Handle multiple URLs separated by comma, semicolon, or pipe
+                                        String[] urls = imageUrl.split("[,;|]");
+                                        for (String url : urls) {
+                                            String cleanUrl = url.trim();
+                                            if (!cleanUrl.isEmpty() && isValidImageUrl(cleanUrl) && !imageUrls.contains(cleanUrl)) {
+                                                imageUrls.add(cleanUrl);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                log.debug("Error processing image node at index {} for tag {}: {}", i, tagName, e.getMessage());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("Error processing tag {}: {}", tagName, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Error in getAllImageUrls: {}", e.getMessage());
+        }
+
+        return imageUrls;
+    }
+
+    /**
+     * Basic validation for image URLs
+     */
+    private boolean isValidImageUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+
+        try {
+            // Basic URL format check
+            String lowerUrl = url.toLowerCase();
+            return (lowerUrl.startsWith("http://") || lowerUrl.startsWith("https://")) &&
+                    (lowerUrl.contains(".jpg") || lowerUrl.contains(".jpeg") ||
+                            lowerUrl.contains(".png") || lowerUrl.contains(".gif") ||
+                            lowerUrl.contains(".webp") || lowerUrl.contains(".svg") ||
+                            lowerUrl.contains("image") || lowerUrl.contains("photo") ||
+                            lowerUrl.contains("picture"));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

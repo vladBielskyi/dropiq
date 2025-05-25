@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AIProductAnalysisService {
 
     private final OllamaClient ollamaClient;
@@ -191,7 +190,7 @@ public class AIProductAnalysisService {
         }
 
         // Set category hierarchy
-        if (product.getDatasets() != null && !product.getDatasets().isEmpty()) {
+//        if (product.getDatasets() != null && !product.getDatasets().isEmpty()) {
 //            DataSet dataset = product.getDatasets().iterator().next();
 //            DatasetCategory category = categoryService.findOrCreateCategory(
 //                    dataset,
@@ -203,7 +202,7 @@ public class AIProductAnalysisService {
 //                    analysis.getSubcategoryEn()
 //            );
 //            product.setCategory(category);
-        }
+//        }
 
         // Set multilingual SEO content
         if (analysis.getSeoTitles() != null) {

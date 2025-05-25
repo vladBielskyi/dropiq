@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 public class OllamaClient {
 
     private final WebClient webClient;
+    private final WebClient podWebClient;
     private final ObjectMapper objectMapper;
 
     @Value("${ollama.vision.model:llava:13b}")
@@ -27,7 +28,7 @@ public class OllamaClient {
     @Value("${ollama.text.model:mixtral:8x7b}")
     private String textModel;
 
-    @Value("${ollama.timeout:300}")
+    @Value("${ollama.timeout:3000}")
     private int timeoutSeconds;
 
     // Product name patterns for real e-commerce
@@ -84,6 +85,11 @@ public class OllamaClient {
     public OllamaClient(@Value("${ollama.base-url:http://localhost:11434}") String baseUrl) {
         this.webClient = WebClient.builder()
                 .baseUrl(baseUrl)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
+                .build();
+
+        this.podWebClient = WebClient.builder()
+                .baseUrl("https://rqfxvsqekuuh8i-11434.proxy.runpod.net")
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
         this.objectMapper = new ObjectMapper();
@@ -227,7 +233,7 @@ public class OllamaClient {
                Examples: "Nike Air Max 270 Men's Running Shoes - Black/White"
                         "Women's Winter Puffer Jacket - Waterproof, Hooded"
             
-            2. DESCRIPTIONS (150-250 words):
+            2. DESCRIPTIONS (60-120 words):
                - Opening hook (benefit statement)
                - 3-4 key features with benefits
                - Technical specs if relevant
@@ -367,7 +373,7 @@ public class OllamaClient {
         options.put("frequency_penalty", 0.1);
         requestBody.put("options", options);
 
-        return webClient.post()
+        return podWebClient.post()
                 .uri("/api/generate")
                 .bodyValue(requestBody)
                 .retrieve()
@@ -561,8 +567,6 @@ public class OllamaClient {
             JsonNode responseNode = objectMapper.readTree(response);
             String content = responseNode.get("response").asText();
 
-            // Clean and extract JSON
-            content = cleanAIResponse(content);
             int jsonStart = content.indexOf('{');
             int jsonEnd = content.lastIndexOf('}') + 1;
 
@@ -626,17 +630,6 @@ public class OllamaClient {
             log.error("Error parsing text response: {}", e.getMessage());
             return createProductionFallbackResult(null);
         }
-    }
-
-    private String cleanAIResponse(String content) {
-        if (content == null) return "";
-
-        return content
-                .replaceAll("(?i)(here is|here's|here are|this is|these are)\\s*(the)?\\s*(json|response|answer)[^{]*", "")
-                .replaceAll("```json", "")
-                .replaceAll("```", "")
-                .replaceAll("(?i)json\\s*:?\\s*", "")
-                .trim();
     }
 
     private Map<String, String> parseLanguageMap(JsonNode root, String fieldName) {

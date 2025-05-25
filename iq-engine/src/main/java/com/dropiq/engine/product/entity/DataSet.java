@@ -52,7 +52,7 @@ public class DataSet {
     private Integer syncIntervalHours = 24;
 
     // Many-to-many relationship with products
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER)
     @JoinTable(
             name = "dataset_products",
             joinColumns = @JoinColumn(name = "dataset_id"),

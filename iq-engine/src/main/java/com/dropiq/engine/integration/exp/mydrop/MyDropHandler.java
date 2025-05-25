@@ -1,5 +1,6 @@
-package com.dropiq.engine.integration.exp.handler;
+package com.dropiq.engine.integration.exp.mydrop;
 
+import com.dropiq.engine.integration.exp.PlatformHandler;
 import com.dropiq.engine.integration.exp.model.Category;
 import com.dropiq.engine.integration.exp.model.SourceType;
 import com.dropiq.engine.integration.exp.model.UnifiedProduct;
@@ -177,16 +178,23 @@ public class MyDropHandler extends PlatformHandler {
 
             // Stock quantity
             try {
-                String quantityStr = getElementTextContent(element, "quantity_in_stock");
-                if (quantityStr != null && !quantityStr.isEmpty()) {
-                    try {
-                        product.setStock(Integer.parseInt(quantityStr.trim()));
-                    } catch (NumberFormatException e) {
-                        log.debug("Invalid stock quantity format: {}", quantityStr);
-                    }
-                }
+                List<String> imageUrls = getAllImageUrls(element, "picture", "image", "gallery", "photos");
+                product.getImageUrls().addAll(imageUrls);
+
+                log.debug("Found {} images for product {}: {}",
+                        imageUrls.size(), product.getName(), imageUrls);
+
             } catch (Exception e) {
-                log.debug("Error getting stock quantity: {}", e.getMessage());
+                log.debug("Error getting image URLs: {}", e.getMessage());
+            }
+
+            String quantityStr = getElementTextContent(element, "quantity_in_stock");
+            if (quantityStr != null && !quantityStr.isEmpty()) {
+                try {
+                    product.setStock(Integer.parseInt(quantityStr.trim()));
+                } catch (NumberFormatException e) {
+                    log.debug("Invalid stock quantity format: {}", quantityStr);
+                }
             }
 
             // Availability

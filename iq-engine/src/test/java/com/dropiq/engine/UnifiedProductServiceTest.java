@@ -5,6 +5,8 @@ import com.dropiq.engine.integration.exp.model.ProductVariantGroup;
 import com.dropiq.engine.integration.exp.model.SourceType;
 import com.dropiq.engine.integration.exp.model.UnifiedProduct;
 import com.dropiq.engine.integration.exp.service.UnifiedProductService;
+import com.dropiq.engine.integration.imp.horoshop.model.HoroshopConfig;
+import com.dropiq.engine.integration.imp.horoshop.service.HoroshopIntegrationService;
 import com.dropiq.engine.product.entity.DataSet;
 import com.dropiq.engine.product.entity.Product;
 import com.dropiq.engine.product.service.AIProductAnalysisService;
@@ -36,6 +38,9 @@ public class UnifiedProductServiceTest {
     @Autowired
     private DataSetService dataSetService;
 
+    @Autowired
+    private HoroshopIntegrationService horoshopIntegrationService;
+
     // Test URLs
     private static final String EASYDROP_URL = "https://easydrop.one/prom-export?key=96368875021347&pid=55541082991053";
     private static final String MYDROP_URL = "https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=3c15e1e3250f59d703bc88175921945f778d68ca&price_field=price&param_name=Размер&stock_sync=true&only_available=true&static_sizes=true";
@@ -60,12 +65,22 @@ public class UnifiedProductServiceTest {
     }
 
     @Test
+    public void impotTest() throws InterruptedException {
+        HoroshopConfig config = new HoroshopConfig();
+        config.setApiUrl("http://shop492328.horoshop.ua/api");
+        config.setDomain("shop492328.horoshop.ua");
+        config.setUsername("owner");
+        config.setPassword("welcome27953");
+        horoshopIntegrationService.exportDatasetToHoroshop(1L, "Vlad", config);
+        Thread.sleep(100000000000L);
+    }
+
+    @Test
     public void dataSet() {
 //        DataSourceConfig easyConfig = new DataSourceConfig();
 //        easyConfig.setUrl("");
 //        easyConfig.setPlatformType(SourceType.MYDROP);
 //        easyConfig.setHeaders(Map.of());
-//
 //
 //        DataSet dataSet =
 //                dataSetService
@@ -83,7 +98,7 @@ public class UnifiedProductServiceTest {
 //        }
 
 
-        productAnalysisService.analyzeDatasetProducts(2L);
+         productAnalysisService.analyzeDatasetProducts(1L);
     }
 
     @Test

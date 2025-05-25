@@ -1,4 +1,4 @@
-package com.dropiq.engine.integration.config;
+package com.dropiq.engine.integration.exp.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
