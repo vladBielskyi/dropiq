@@ -25,7 +25,7 @@ public class OllamaClient {
     @Value("${ollama.vision.model:llava:7b}")
     private String visionModel;
 
-    @Value("${ollama.text.model:qwen2.5:7b}")
+    @Value("${ollama.text.model}")
     private String textModel;
 
     @Value("${ollama.timeout:300}")
@@ -93,9 +93,13 @@ public class OllamaClient {
             requestBody.put("images", List.of(base64Image));
         }
 
+        // ОПТИМІЗОВАНІ ПАРАМЕТРИ ДЛЯ КРАЩОЇ ЯКОСТІ
         Map<String, Object> options = new HashMap<>();
-        options.put("temperature", 0.1);
-        options.put("top_p", 0.9);
+        options.put("temperature", 0.1);        // Менше креативності, більше точності
+        options.put("top_p", 0.8);             // Зосередженість на кращих варіантах
+        options.put("top_k", 10);              // Обмежуємо вибір токенів
+        options.put("num_predict", 500);       // Коротші відповіді
+        options.put("repeat_penalty", 1.1);    // Уникаємо повторів
         requestBody.put("options", options);
 
         return webClient.post()
@@ -113,9 +117,14 @@ public class OllamaClient {
         requestBody.put("prompt", prompt);
         requestBody.put("stream", false);
 
+        // СПЕЦІАЛЬНІ ПАРАМЕТРИ ДЛЯ УКРАЇНСЬКОГО ТЕКСТУ
         Map<String, Object> options = new HashMap<>();
-        options.put("temperature", 0.2);
+        options.put("temperature", 0.3);        // Трохи більше креативності для тексту
         options.put("top_p", 0.9);
+        options.put("top_k", 20);
+        options.put("num_predict", 800);       // Більше токенів для повного контенту
+        options.put("repeat_penalty", 1.2);    // Сильніше уникаємо повторів
+        options.put("presence_penalty", 0.1);  // Заохочуємо різноманітність
         requestBody.put("options", options);
 
         return webClient.post()
@@ -162,11 +171,15 @@ public class OllamaClient {
             JsonNode responseNode = objectMapper.readTree(response);
             String content = responseNode.get("response").asText();
 
+            // Очищуємо відповідь від зайвого тексту
+            content = cleanAIResponse(content);
+
             int jsonStart = content.indexOf('{');
             int jsonEnd = content.lastIndexOf('}') + 1;
 
             if (jsonStart == -1 || jsonEnd <= jsonStart) {
-                return createFallbackTextResult();
+                log.warn("Не знайдено валідний JSON у відповіді AI");
+                return createHighQualityFallback();
             }
 
             String jsonContent = content.substring(jsonStart, jsonEnd);
@@ -174,47 +187,134 @@ public class OllamaClient {
 
             ProductAnalysisResult result = new ProductAnalysisResult();
 
-            // Parse categories
+            // Парсимо категорії
             JsonNode categories = analysisNode.get("categories");
             if (categories != null) {
-                result.setCategoryUk(getJsonString(categories, "main_uk"));
-                result.setCategoryRu(getJsonString(categories, "main_ru"));
-                result.setCategoryEn(getJsonString(categories, "main_en"));
-                result.setSubcategoryUk(getJsonString(categories, "sub_uk"));
-                result.setSubcategoryRu(getJsonString(categories, "sub_ru"));
-                result.setSubcategoryEn(getJsonString(categories, "sub_en"));
+                result.setCategoryUk(cleanJsonString(categories, "main_uk"));
+                result.setCategoryRu(cleanJsonString(categories, "main_ru"));
+                result.setCategoryEn(cleanJsonString(categories, "main_en"));
             }
 
-            // Parse multilingual content
-            result.setSeoTitles(parseLanguageMap(analysisNode, "seo_titles"));
-            result.setDescriptions(parseLanguageMap(analysisNode, "descriptions"));
-            result.setMetaDescriptions(parseLanguageMap(analysisNode, "meta_descriptions"));
-            result.setTargetAudience(parseLanguageMap(analysisNode, "target_audiences"));
+            // Парсимо багатомовний контент з очищенням
+            result.setSeoTitles(parseAndCleanLanguageMap(analysisNode, "seo_titles", 60));
+            result.setDescriptions(parseAndCleanLanguageMap(analysisNode, "descriptions", 500));
+            result.setMetaDescriptions(parseAndCleanLanguageMap(analysisNode, "meta_descriptions", 160));
+            result.setTargetAudience(parseAndCleanLanguageMap(analysisNode, "target_audiences", 200));
 
-            // Parse tags
+            // Парсимо теги з обмеженням
             JsonNode tags = analysisNode.get("tags");
             if (tags != null) {
                 Map<String, List<String>> tagMap = new HashMap<>();
-                tagMap.put("uk", getJsonStringList(tags, "uk"));
-                tagMap.put("ru", getJsonStringList(tags, "ru"));
-                tagMap.put("en", getJsonStringList(tags, "en"));
+                tagMap.put("uk", getCleanedStringList(tags, "uk", 5));
+                tagMap.put("ru", getCleanedStringList(tags, "ru", 5));
+                tagMap.put("en", getCleanedStringList(tags, "en", 5));
                 result.setTags(tagMap);
             }
 
-            // Parse marketing and sales fields
-            result.setTrendScore(getJsonDouble(analysisNode, "trend_score"));
-            result.setPredictedPriceRange(getJsonString(analysisNode, "predicted_price_range"));
-            result.setStyleTags(getJsonString(analysisNode, "style_tags"));
-            result.setMarketingAngles(getJsonString(analysisNode, "marketing_angles"));
-            result.setCompetitiveAdvantage(getJsonString(analysisNode, "competitive_advantage"));
-            result.setUrgencyTriggers(getJsonString(analysisNode, "urgency_triggers"));
+            // Парсимо числові значення з валідацією
+            result.setTrendScore(getValidatedDouble(analysisNode, "trend_score", 1.0, 10.0));
+            result.setPredictedPriceRange(cleanJsonString(analysisNode, "predicted_price_range"));
+            result.setStyleTags(cleanJsonString(analysisNode, "style_tags"));
+            result.setCompetitiveAdvantage(cleanJsonString(analysisNode, "competitive_advantage"));
+            result.setUrgencyTriggers(cleanJsonString(analysisNode, "urgency_triggers"));
 
             return result;
 
         } catch (Exception e) {
-            log.error("Error parsing text response: {}", e.getMessage());
-            return createFallbackTextResult();
+            log.error("Помилка парсингу AI відповіді: {}", e.getMessage());
+            return createHighQualityFallback();
         }
+    }
+
+    // МЕТОДИ ДЛЯ ОЧИЩЕННЯ ТА ВАЛІДАЦІЇ
+    private String cleanAIResponse(String content) {
+        if (content == null) return "";
+
+        return content
+                // Прибираємо зайві фрази AI
+                .replaceAll("(?i)(ось|here is|here's|вот|это)\\s*(json|відповідь|ответ|answer)[^{]*", "")
+                .replaceAll("(?i)(json\\s*:?\\s*)", "")
+                .replaceAll("```json", "")
+                .replaceAll("```", "")
+                .trim();
+    }
+
+    private String cleanJsonString(JsonNode node, String field) {
+        JsonNode fieldNode = node.get(field);
+        if (fieldNode == null) return null;
+
+        String value = fieldNode.asText();
+        if (value == null) return null;
+
+        return value.trim()
+                .replaceAll("\\s+", " ")
+                .replaceAll("^[.,:;!?\\s]+|[.,:;!?\\s]+$", "");
+    }
+
+    private Map<String, String> parseAndCleanLanguageMap(JsonNode root, String fieldName, int maxLength) {
+        Map<String, String> result = new HashMap<>();
+        JsonNode node = root.get(fieldName);
+        if (node != null) {
+            result.put("uk", truncateText(cleanJsonString(node, "uk"), maxLength));
+            result.put("ru", truncateText(cleanJsonString(node, "ru"), maxLength));
+            result.put("en", truncateText(cleanJsonString(node, "en"), maxLength));
+        }
+        return result;
+    }
+
+    private List<String> getCleanedStringList(JsonNode node, String field, int maxItems) {
+        JsonNode fieldNode = node.get(field);
+        if (fieldNode != null && fieldNode.isArray()) {
+            List<String> result = new ArrayList<>();
+            for (int i = 0; i < Math.min(fieldNode.size(), maxItems); i++) {
+                String tag = cleanJsonString(fieldNode, String.valueOf(i));
+                if (tag != null && !tag.isEmpty()) {
+                    result.add(tag);
+                }
+            }
+            return result;
+        }
+        return new ArrayList<>();
+    }
+
+    private Double getValidatedDouble(JsonNode node, String field, double min, double max) {
+        JsonNode fieldNode = node.get(field);
+        if (fieldNode != null) {
+            double value = fieldNode.asDouble();
+            return Math.max(min, Math.min(max, value));
+        }
+        return null;
+    }
+
+    private String truncateText(String text, int maxLength) {
+        if (text == null) return null;
+        return text.length() > maxLength ? text.substring(0, maxLength).trim() : text;
+    }
+
+    // ЯКІСНИЙ FALLBACK ЗАМІСТЬ ПОМИЛОК
+    private ProductAnalysisResult createHighQualityFallback() {
+        ProductAnalysisResult result = new ProductAnalysisResult();
+
+        result.setCategoryUk("Товари");
+        result.setCategoryRu("Товары");
+        result.setCategoryEn("Products");
+        result.setTrendScore(6.0);
+        result.setPredictedPriceRange("mid-range");
+
+        // Якісні fallback тексти
+        Map<String, String> fallbackTitles = new HashMap<>();
+        fallbackTitles.put("uk", "Якісний товар за вигідною ціною");
+        fallbackTitles.put("ru", "Качественный товар по выгодной цене");
+        fallbackTitles.put("en", "Quality product at great price");
+        result.setSeoTitles(fallbackTitles);
+
+        Map<String, String> fallbackDescriptions = new HashMap<>();
+        fallbackDescriptions.put("uk", "Високоякісний товар з відмінними характеристиками. Швидка доставка та гарантія якості.");
+        fallbackDescriptions.put("ru", "Высококачественный товар с отличными характеристиками. Быстрая доставка и гарантия качества.");
+        fallbackDescriptions.put("en", "High-quality product with excellent features. Fast delivery and quality guarantee.");
+        result.setDescriptions(fallbackDescriptions);
+
+        return result;
     }
 
     private Map<String, String> parseLanguageMap(JsonNode root, String fieldName) {
