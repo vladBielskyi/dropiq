@@ -356,13 +356,34 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
     }
 
     private void toggleGroupExpansion(ProductDisplayItem groupItem) {
-        groupItem.setExpanded(!groupItem.isExpanded());
-        buildDisplayItems(allProducts);
+        if (!groupItem.isGroup()) {
+            System.err.println("Cannot toggle expansion on non-group item");
+            return;
+        }
 
-        // Refresh the grid
-        productDisplayDc.setItems(displayItems);
+        // Toggle the expansion state
+        boolean newExpansionState = !groupItem.isExpanded();
+        groupItem.setExpanded(newExpansionState);
 
-        System.out.println("Toggled group " + groupItem.getGroupId() + " to " + (groupItem.isExpanded() ? "expanded" : "collapsed"));
+        System.out.println("Toggling group " + groupItem.getGroupId() + " to " + (newExpansionState ? "expanded" : "collapsed"));
+
+        // Rebuild the display items with current filter
+        if (hasActiveFilters()) {
+            // If filters are active, apply them
+            ProductFilterCriteria criteria = buildFilterCriteria();
+            List<Product> filteredProducts = filterProducts(allProducts, criteria);
+            buildDisplayItems(filteredProducts);
+        } else {
+            // No filters, show all products
+            buildDisplayItems(allProducts);
+        }
+
+        System.out.println("Group expansion toggled successfully. New state: " + newExpansionState);
+    }
+
+    // Helper method to check if filters are active
+    private boolean hasActiveFilters() {
+        return !buildFilterCriteria().isEmpty();
     }
 
     private void loadProducts() {
@@ -385,14 +406,23 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
         }
     }
 
-    // ADD THIS METHOD to your existing class
     private void buildDisplayItems(List<Product> products) {
         if (productDisplayDc == null) {
             System.err.println("productDisplayDc is null - grouping not available");
             return;
         }
 
-        List<ProductDisplayItem> displayItems = new ArrayList<>();
+        // Store current expansion state before rebuilding
+        Set<String> expandedGroups = displayItems.stream()
+                .filter(ProductDisplayItem::isGroup)
+                .filter(ProductDisplayItem::isExpanded)
+                .map(ProductDisplayItem::getGroupId)
+                .collect(Collectors.toSet());
+
+        System.out.println("Preserving expanded state for groups: " + expandedGroups);
+
+        // Clear and rebuild display items
+        displayItems.clear();
 
         // Group products by groupId
         Map<String, List<Product>> groupedProducts = products.stream()
@@ -414,22 +444,35 @@ public class DataSetDetailView extends StandardDetailView<DataSet> {
             } else {
                 // Multiple products with same groupId - create group
                 ProductDisplayItem groupItem = ProductDisplayItem.createProductGroup(groupId, groupProducts);
-                displayItems.add(groupItem);
-                System.out.println("Added product group: " + groupId + " with " + groupProducts.size() + " variants");
 
-                // Add expanded variants (for testing, let's expand by default)
-                groupItem.setExpanded(true);
-                for (Product variant : groupProducts) {
-                    displayItems.add(ProductDisplayItem.createVariantProduct(variant));
+                // Restore expansion state
+                boolean wasExpanded = expandedGroups.contains(groupId);
+                groupItem.setExpanded(wasExpanded);
+
+                displayItems.add(groupItem);
+                System.out.println("Added product group: " + groupId + " with " + groupProducts.size() + " variants (expanded: " + wasExpanded + ")");
+
+                // Add variants if group is expanded
+                if (groupItem.isExpanded()) {
+                    // Sort variants by name for consistent display
+                    groupProducts.stream()
+                            .sorted(Comparator.comparing(Product::getName))
+                            .forEach(variant -> {
+                                displayItems.add(ProductDisplayItem.createVariantProduct(variant));
+                            });
+                    System.out.println("Added " + groupProducts.size() + " variants for expanded group: " + groupId);
                 }
             }
         }
+
+        // Sort by display name
+        displayItems.sort(Comparator.comparing(ProductDisplayItem::getDisplayName));
 
         // Update the grid
         productDisplayDc.setItems(displayItems);
         updateProductCount(products.size());
 
-        System.out.println("Built " + displayItems.size() + " display items");
+        System.out.println("Built " + displayItems.size() + " display items from " + products.size() + " products");
     }
 
     @Subscribe("toggleFiltersButton")

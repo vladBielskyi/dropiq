@@ -22,6 +22,7 @@ public class ProductDisplayItem {
     private String groupId;
     private Integer variantCount;
     private BigDecimal totalValue;
+    // Add this method to your ProductDisplayItem class if it's missing
     private Boolean expanded = false;
 
     public enum ProductDisplayType {

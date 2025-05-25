@@ -122,6 +122,85 @@ public class Product {
     @Column(name = "data_value")
     private Map<String, String> platformSpecificData = new HashMap<>();
 
+    @Column(name = "ai_analyzed")
+    private Boolean aiAnalyzed = false;
+
+    @Column(name = "ai_analysis_date")
+    private LocalDateTime aiAnalysisDate;
+
+    @Column(name = "ai_confidence_score")
+    private Double aiConfidenceScore = 0.0;
+
+    // Multilingual SEO Fields
+    @Column(name = "seo_title_uk", length = 200)
+    private String seoTitleUk;
+
+    @Column(name = "seo_title_ru", length = 200)
+    private String seoTitleRu;
+
+    @Column(name = "seo_title_en", length = 200)
+    private String seoTitleEn;
+
+    @Column(name = "description_uk", length = 4000)
+    private String descriptionUk;
+
+    @Column(name = "description_ru", length = 4000)
+    private String descriptionRu;
+
+    @Column(name = "description_en", length = 4000)
+    private String descriptionEn;
+
+    @Column(name = "meta_description_uk", length = 500)
+    private String metaDescriptionUk;
+
+    @Column(name = "meta_description_ru", length = 500)
+    private String metaDescriptionRu;
+
+    @Column(name = "meta_description_en", length = 500)
+    private String metaDescriptionEn;
+
+    @ElementCollection
+    @CollectionTable(name = "product_tags_uk", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "tag")
+    private Set<String> tagsUk = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "product_tags_ru", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "tag")
+    private Set<String> tagsRu = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "product_tags_en", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "tag")
+    private Set<String> tagsEn = new HashSet<>();
+
+    // Category relationship
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private DatasetCategory category;
+
+    // AI Generated Attributes
+    @Column(name = "predicted_price_range", length = 50)
+    private String predictedPriceRange;
+
+    @Column(name = "target_audience_uk", length = 500)
+    private String targetAudienceUk;
+
+    @Column(name = "target_audience_ru", length = 500)
+    private String targetAudienceRu;
+
+    @Column(name = "target_audience_en", length = 500)
+    private String targetAudienceEn;
+
+    @Column(name = "style_tags", length = 500)
+    private String styleTags;
+
+    @Column(name = "color_analysis", length = 500)
+    private String colorAnalysis;
+
+    @Column(name = "main_features", length = 1000)
+    private String mainFeatures;
+
     @PrePersist
     @PreUpdate
     protected void onUpdate() {
