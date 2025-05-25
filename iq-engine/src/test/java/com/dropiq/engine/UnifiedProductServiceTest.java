@@ -6,6 +6,8 @@ import com.dropiq.engine.integration.exp.model.SourceType;
 import com.dropiq.engine.integration.exp.model.UnifiedProduct;
 import com.dropiq.engine.integration.exp.service.UnifiedProductService;
 import com.dropiq.engine.product.entity.DataSet;
+import com.dropiq.engine.product.entity.Product;
+import com.dropiq.engine.product.service.AIProductAnalysisService;
 import com.dropiq.engine.product.service.DataSetService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,9 @@ public class UnifiedProductServiceTest {
     private UnifiedProductService service;
 
     @Autowired
+    private AIProductAnalysisService productAnalysisService;
+
+    @Autowired
     private DataSetService dataSetService;
 
     // Test URLs
@@ -47,8 +52,10 @@ public class UnifiedProductServiceTest {
                 dataSetService
                         .createDatasetFromSources("Test 3", "Test", "Vlad", List.of(easyConfig));
 
-        System.out.println(dataSetService.getDatasetStatistics(dataSet.getId(), "vlad"));
 
+        for (Product product : dataSet.getProducts()) {
+            productAnalysisService.analyzeProduct(product.getId());
+        }
     }
 
     @Test

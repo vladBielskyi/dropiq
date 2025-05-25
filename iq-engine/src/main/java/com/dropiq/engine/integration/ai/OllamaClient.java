@@ -6,14 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import java.util.Base64;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -45,10 +45,7 @@ public class OllamaClient {
         try {
             log.info("Analyzing product image with vision model: {}", visionModel);
 
-            // Download and encode image
             String base64Image = downloadAndEncodeImage(imageUrl);
-
-            // Call vision model
             String response = callOllamaVision(prompt, base64Image);
 
             return parseVisionResponse(response);
@@ -67,7 +64,6 @@ public class OllamaClient {
             log.info("Generating multilingual content with text model: {}", textModel);
 
             String response = callOllamaText(prompt);
-
             return parseTextResponse(response);
 
         } catch (Exception e) {
@@ -80,10 +76,9 @@ public class OllamaClient {
         try {
             URL url = new URL(imageUrl);
             byte[] imageBytes = url.openStream().readAllBytes();
-            return Base64Utils.encodeToString(imageBytes);
+            return Base64.getEncoder().encodeToString(imageBytes);
         } catch (Exception e) {
-            log.warn("Failed to download image from URL: {}, using placeholder", imageUrl);
-            // Return empty base64 string - model will work without image
+            log.warn("Failed to download image from URL: {}", imageUrl);
             return "";
         }
     }
@@ -137,7 +132,6 @@ public class OllamaClient {
             JsonNode responseNode = objectMapper.readTree(response);
             String content = responseNode.get("response").asText();
 
-            // Extract JSON from response
             int jsonStart = content.indexOf('{');
             int jsonEnd = content.lastIndexOf('}') + 1;
 
@@ -150,15 +144,10 @@ public class OllamaClient {
 
             ProductAnalysisResult result = new ProductAnalysisResult();
             result.setProductType(getJsonString(analysisNode, "product_type"));
-            result.setMainCategory(getJsonString(analysisNode, "main_category"));
-            result.setSubcategory(getJsonString(analysisNode, "subcategory"));
-            result.setMainFeatures(getJsonStringArray(analysisNode, "main_features"));
-            result.setColors(getJsonStringArray(analysisNode, "colors"));
+            result.setMainFeatures(getJsonStringList(analysisNode, "main_features"));
+            result.setColors(getJsonStringList(analysisNode, "colors"));
             result.setStyle(getJsonString(analysisNode, "style"));
-            result.setTargetAudience(getJsonString(analysisNode, "target_audience"));
-            result.setPriceRange(getJsonString(analysisNode, "price_range"));
             result.setVisualQuality(getJsonDouble(analysisNode, "visual_quality"));
-            result.setBrandVisible(getJsonBoolean(analysisNode, "brand_visible"));
 
             return result;
 
@@ -173,7 +162,6 @@ public class OllamaClient {
             JsonNode responseNode = objectMapper.readTree(response);
             String content = responseNode.get("response").asText();
 
-            // Extract JSON from response
             int jsonStart = content.indexOf('{');
             int jsonEnd = content.lastIndexOf('}') + 1;
 
@@ -197,35 +185,11 @@ public class OllamaClient {
                 result.setSubcategoryEn(getJsonString(categories, "sub_en"));
             }
 
-            // Parse SEO titles
-            JsonNode seoTitles = analysisNode.get("seo_titles");
-            if (seoTitles != null) {
-                Map<String, String> titles = new HashMap<>();
-                titles.put("uk", getJsonString(seoTitles, "uk"));
-                titles.put("ru", getJsonString(seoTitles, "ru"));
-                titles.put("en", getJsonString(seoTitles, "en"));
-                result.setSeoTitles(titles);
-            }
-
-            // Parse descriptions
-            JsonNode descriptions = analysisNode.get("descriptions");
-            if (descriptions != null) {
-                Map<String, String> descs = new HashMap<>();
-                descs.put("uk", getJsonString(descriptions, "uk"));
-                descs.put("ru", getJsonString(descriptions, "ru"));
-                descs.put("en", getJsonString(descriptions, "en"));
-                result.setDescriptions(descs);
-            }
-
-            // Parse meta descriptions
-            JsonNode metaDescriptions = analysisNode.get("meta_descriptions");
-            if (metaDescriptions != null) {
-                Map<String, String> metaDescs = new HashMap<>();
-                metaDescs.put("uk", getJsonString(metaDescriptions, "uk"));
-                metaDescs.put("ru", getJsonString(metaDescriptions, "ru"));
-                metaDescs.put("en", getJsonString(metaDescriptions, "en"));
-                result.setMetaDescriptions(metaDescs);
-            }
+            // Parse multilingual content
+            result.setSeoTitles(parseLanguageMap(analysisNode, "seo_titles"));
+            result.setDescriptions(parseLanguageMap(analysisNode, "descriptions"));
+            result.setMetaDescriptions(parseLanguageMap(analysisNode, "meta_descriptions"));
+            result.setTargetAudience(parseLanguageMap(analysisNode, "target_audiences"));
 
             // Parse tags
             JsonNode tags = analysisNode.get("tags");
@@ -237,21 +201,13 @@ public class OllamaClient {
                 result.setTags(tagMap);
             }
 
-            // Parse target audience
-            JsonNode targetAudience = analysisNode.get("target_audience");
-            if (targetAudience != null) {
-                Map<String, String> audience = new HashMap<>();
-                audience.put("uk", getJsonString(targetAudience, "uk"));
-                audience.put("ru", getJsonString(targetAudience, "ru"));
-                audience.put("en", getJsonString(targetAudience, "en"));
-                result.setTargetAudience(audience);
-            }
-
-            // Parse other fields
+            // Parse marketing and sales fields
             result.setTrendScore(getJsonDouble(analysisNode, "trend_score"));
             result.setPredictedPriceRange(getJsonString(analysisNode, "predicted_price_range"));
             result.setStyleTags(getJsonString(analysisNode, "style_tags"));
-            result.setMainFeatures(getJsonString(analysisNode, "main_features"));
+            result.setMarketingAngles(getJsonString(analysisNode, "marketing_angles"));
+            result.setCompetitiveAdvantage(getJsonString(analysisNode, "competitive_advantage"));
+            result.setUrgencyTriggers(getJsonString(analysisNode, "urgency_triggers"));
 
             return result;
 
@@ -259,6 +215,17 @@ public class OllamaClient {
             log.error("Error parsing text response: {}", e.getMessage());
             return createFallbackTextResult();
         }
+    }
+
+    private Map<String, String> parseLanguageMap(JsonNode root, String fieldName) {
+        Map<String, String> result = new HashMap<>();
+        JsonNode node = root.get(fieldName);
+        if (node != null) {
+            result.put("uk", getJsonString(node, "uk"));
+            result.put("ru", getJsonString(node, "ru"));
+            result.put("en", getJsonString(node, "en"));
+        }
+        return result;
     }
 
     // Helper methods for JSON parsing
@@ -272,12 +239,7 @@ public class OllamaClient {
         return fieldNode != null ? fieldNode.asDouble() : null;
     }
 
-    private Boolean getJsonBoolean(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        return fieldNode != null ? fieldNode.asBoolean() : null;
-    }
-
-    private List<String> getJsonStringArray(JsonNode node, String field) {
+    private List<String> getJsonStringList(JsonNode node, String field) {
         JsonNode fieldNode = node.get(field);
         if (fieldNode != null && fieldNode.isArray()) {
             List<String> result = new ArrayList<>();
@@ -287,19 +249,12 @@ public class OllamaClient {
         return new ArrayList<>();
     }
 
-    private List<String> getJsonStringList(JsonNode node, String field) {
-        return getJsonStringArray(node, field);
-    }
-
     private ProductAnalysisResult createFallbackVisionResult() {
         ProductAnalysisResult result = new ProductAnalysisResult();
-        result.setMainCategory("General");
-        result.setSubcategory("Other");
         result.setColors(List.of("Unknown"));
         result.setMainFeatures(List.of("Standard product"));
         result.setStyle("Modern");
         result.setVisualQuality(5.0);
-        result.setBrandVisible(false);
         return result;
     }
 
@@ -310,6 +265,26 @@ public class OllamaClient {
         result.setCategoryEn("Other");
         result.setTrendScore(5.0);
         result.setPredictedPriceRange("mid-range");
+
+        // Fallback multilingual content
+        Map<String, String> fallbackTitles = new HashMap<>();
+        fallbackTitles.put("uk", "Якісний товар за доступною ціною");
+        fallbackTitles.put("ru", "Качественный товар по доступной цене");
+        fallbackTitles.put("en", "Quality Product at Affordable Price");
+        result.setSeoTitles(fallbackTitles);
+
+        Map<String, String> fallbackDescriptions = new HashMap<>();
+        fallbackDescriptions.put("uk", "Високоякісний товар, який поєднує в собі сучасний дизайн та функціональність. Ідеально підходить для повсякденного використання.");
+        fallbackDescriptions.put("ru", "Высококачественный товар, сочетающий современный дизайн и функциональность. Идеально подходит для повседневного использования.");
+        fallbackDescriptions.put("en", "High-quality product combining modern design with functionality. Perfect for everyday use.");
+        result.setDescriptions(fallbackDescriptions);
+
+        Map<String, String> fallbackAudiences = new HashMap<>();
+        fallbackAudiences.put("uk", "Активні люди, які цінують якість та зручність");
+        fallbackAudiences.put("ru", "Активные люди, ценящие качество и удобство");
+        fallbackAudiences.put("en", "Active people who value quality and convenience");
+        result.setTargetAudience(fallbackAudiences);
+
         return result;
     }
 }

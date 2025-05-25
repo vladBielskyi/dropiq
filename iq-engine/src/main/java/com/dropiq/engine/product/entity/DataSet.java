@@ -7,6 +7,7 @@ import com.dropiq.engine.product.model.ProductStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ import java.util.*;
 @Entity
 @Table(name = "dataset")
 @Data
+@ToString(exclude = {"products"})
 @EqualsAndHashCode(exclude = {"products"})
 public class DataSet {
     @Id

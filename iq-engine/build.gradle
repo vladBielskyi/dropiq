@@ -8,13 +8,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-    // DATABASE DEPENDENCIES (NEW)
+    // DATABASE DEPENDENCIES
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'org.postgresql:postgresql'
-
-    // Database Migration (Optional but recommended)
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
 
     // XML Processing
     implementation 'org.springframework:spring-oxm'
@@ -24,6 +20,9 @@ dependencies {
     // JSON Processing
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // WebClient (CRITICAL FIX - SpringBoot 3.x uses WebFlux)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // Utility Libraries
     compileOnly 'org.projectlombok:lombok'
@@ -45,8 +44,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-
-    // Testing Database (H2 for in-memory tests)
+    testImplementation 'com.h2database:h2'
 }
 
 tasks.register("prepareKotlinBuildScriptModel"){}

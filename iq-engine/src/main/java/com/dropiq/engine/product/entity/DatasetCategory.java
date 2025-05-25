@@ -8,10 +8,19 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
-@Table(name = "dataset_category")
+@Table(name = "dataset_category",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"dataset_id", "slug"}))
 @Data
-@EqualsAndHashCode(exclude = {"children", "products", "dataset"})
+@EqualsAndHashCode(exclude = {"children", "products", "dataset", "parent"})
 public class DatasetCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +35,7 @@ public class DatasetCategory {
     @Column(name = "name_en", nullable = false)
     private String nameEn;
 
-    @Column(name = "slug", unique = true, nullable = false)
+    @Column(name = "slug", nullable = false)
     private String slug;
 
     @Column(name = "description_uk", length = 1000)
@@ -56,7 +65,7 @@ public class DatasetCategory {
     private Integer productCount = 0;
 
     @Column(name = "level")
-    private Integer level = 0; // 0 = root, 1 = child, 2 = grandchild, etc.
+    private Integer level = 0;
 
     @Column(name = "is_active")
     private Boolean isActive = true;

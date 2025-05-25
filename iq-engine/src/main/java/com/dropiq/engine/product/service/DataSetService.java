@@ -305,7 +305,7 @@ public class DataSetService {
 
                 if (existingProduct.isPresent()) {
                     // Update existing product
-                    productMapper.updateProduct(existingProduct.get(), unifiedProduct);
+                    productMapper.syncStockAndAvailable(existingProduct.get(), unifiedProduct);
                     updatedCount++;
                 } else {
                     // Add new product
@@ -528,14 +528,6 @@ public class DataSetService {
 
         if (filter.getCategoryIds() != null && !filter.getCategoryIds().isEmpty()) {
             if (product.getExternalCategoryId() == null || !filter.getCategoryIds().contains(product.getExternalCategoryId())) {
-                return false;
-            }
-        }
-
-        if (filter.getSearchTerm() != null && !filter.getSearchTerm().trim().isEmpty()) {
-            String searchTerm = filter.getSearchTerm().toLowerCase();
-            if (!product.getName().toLowerCase().contains(searchTerm) &&
-                    !product.getDescription().toLowerCase().contains(searchTerm)) {
                 return false;
             }
         }

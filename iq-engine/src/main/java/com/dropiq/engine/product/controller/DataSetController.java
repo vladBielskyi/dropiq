@@ -26,7 +26,7 @@ import java.util.Optional;
 public class DataSetController {
 
     private final DataSetService dataSetService;
-    private SyncSchedulingService syncSchedulingService;
+    private final SyncSchedulingService syncSchedulingService;
 
     /**
      * Create dataset from data sources

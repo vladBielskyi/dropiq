@@ -14,7 +14,7 @@ public class ProductAnalysisResult {
     private List<String> mainFeatures;
     private List<String> colors;
     private String style;
-    private String targetAudience;
+    private Map<String, String> targetAudience;
     private String priceRange;
     private Double visualQuality;
     private Boolean brandVisible;
@@ -32,12 +32,13 @@ public class ProductAnalysisResult {
     private Map<String, String> descriptions;
     private Map<String, String> metaDescriptions;
     private Map<String, List<String>> tags;
-    private Map<String, String> targetAudience;
 
     // Analysis metadata
     private Double trendScore;
     private String predictedPriceRange;
     private String styleTags;
-    private String mainFeatures;
     private Double confidence;
+    private String marketingAngles;
+    private String competitiveAdvantage;
+    private String urgencyTriggers;
 }

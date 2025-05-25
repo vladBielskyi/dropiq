@@ -55,6 +55,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     List<Product> findByAvailableTrue();
 
+    List<Product> findByGroupIdAndSourceTypeAndAiAnalyzedTrue(String groupId, SourceType sourceType);
+
+    List<Product> findByGroupIdAndSourceTypeAndAiAnalyzedFalse(String groupId, SourceType sourceType);
+
     /**
      * Find products that need sync (haven't been synced recently)
      */
@@ -66,11 +70,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     @Query("SELECT p FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<Product> searchByName(@Param("searchTerm") String searchTerm, Pageable pageable);
-
-    /**
-     * Find products with AI optimization enabled
-     */
-    List<Product> findByAiOptimizedTrue();
 
     /**
      * Find products by trend score range

@@ -26,7 +26,7 @@ public class ProductMapper {
         product.setExternalId(unifiedProduct.getExternalId());
         product.setGroupId(unifiedProduct.getGroupId());
         product.setName(unifiedProduct.getName());
-        product.setDescription(unifiedProduct.getDescription());
+        product.setOriginalDescription(unifiedProduct.getDescription());
         product.setOriginalPrice(BigDecimal.valueOf(unifiedProduct.getPrice()));
         product.setStock(unifiedProduct.getStock());
         product.setAvailable(unifiedProduct.isAvailable());
@@ -63,7 +63,7 @@ public class ProductMapper {
         unifiedProduct.setExternalId(product.getExternalId());
         unifiedProduct.setGroupId(product.getGroupId());
         unifiedProduct.setName(product.getName());
-        unifiedProduct.setDescription(product.getDescription());
+        unifiedProduct.setDescription(product.getOriginalDescription());
         unifiedProduct.setPrice(product.getOriginalPrice().doubleValue());
         unifiedProduct.setStock(product.getStock());
         unifiedProduct.setAvailable(product.getAvailable());
@@ -149,7 +149,7 @@ public class ProductMapper {
         existingProduct.setExternalId(source.getExternalId());
         existingProduct.setGroupId(source.getGroupId());
         existingProduct.setName(source.getName());
-        existingProduct.setDescription(source.getDescription());
+        existingProduct.setOriginalDescription(source.getDescription());
         existingProduct.setOriginalPrice(BigDecimal.valueOf(source.getPrice()));
         existingProduct.setStock(source.getStock());
         existingProduct.setAvailable(source.isAvailable());
@@ -171,6 +171,25 @@ public class ProductMapper {
         }
     }
 
+    public void syncStockAndAvailable(Product product, UnifiedProduct existingUnifiedProduct) {
+        if (existingUnifiedProduct == null || product == null) {
+            return;
+        }
+
+        product.setStock(existingUnifiedProduct.getStock());
+        product.setAvailable(existingUnifiedProduct.getStock() > 0);
+        product.setExternalId(existingUnifiedProduct.getExternalId());
+        product.setExternalCategoryId(existingUnifiedProduct.getExternalCategoryId());
+        product.setExternalCategoryName(existingUnifiedProduct.getExternalCategoryName());
+        product.setSourceType(existingUnifiedProduct.getSourceType());
+        product.setSourceUrl(existingUnifiedProduct.getSourceUrl());
+        product.setUpdatedAt(existingUnifiedProduct.getLastUpdated());
+        product.setLastSync(LocalDateTime.now());
+        if (existingUnifiedProduct.getImageUrls() != null) {
+            product.setImageUrls(new ArrayList<>(existingUnifiedProduct.getImageUrls()));
+        }
+    }
+
     /**
      * Update existing UnifiedProduct with data from Product
      */
@@ -182,7 +201,7 @@ public class ProductMapper {
         existingUnifiedProduct.setExternalId(source.getExternalId());
         existingUnifiedProduct.setGroupId(source.getGroupId());
         existingUnifiedProduct.setName(source.getName());
-        existingUnifiedProduct.setDescription(source.getDescription());
+        existingUnifiedProduct.setDescription(source.getOriginalDescription());
         existingUnifiedProduct.setPrice(source.getOriginalPrice().doubleValue());
         existingUnifiedProduct.setStock(source.getStock());
         existingUnifiedProduct.setAvailable(source.getAvailable());

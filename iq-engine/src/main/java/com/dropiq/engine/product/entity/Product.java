@@ -11,9 +11,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
-@Table(name = "product")
+@Table(name = "product",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"external_id", "source_type"}))
 @Data
-@EqualsAndHashCode(exclude = {"datasets"})
+@EqualsAndHashCode(exclude = {"datasets", "category"})
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,14 +23,14 @@ public class Product {
     @Column(name = "external_id", nullable = false)
     private String externalId;
 
-    @Column(name = "group_id")
+    @Column(name = "group_id") // KEY FIELD FOR VARIANTS
     private String groupId;
 
     @Column(name = "name", nullable = false, length = 500)
     private String name;
 
-    @Column(name = "description", length = 4000)
-    private String description;
+    @Column(name = "original_description", length = 4000)
+    private String originalDescription; // ORIGINAL from source
 
     @Column(name = "short_description", length = 1000)
     private String shortDescription;
@@ -87,41 +88,9 @@ public class Product {
     @Column(name = "status")
     private ProductStatus status = ProductStatus.DRAFT;
 
-    @Column(name = "ai_optimized")
-    private Boolean aiOptimized = false;
-
-    @Column(name = "seo_title", length = 200)
-    private String seoTitle;
-
-    @Column(name = "seo_description", length = 500)
-    private String seoDescription;
-
-    @Column(name = "seo_keywords", length = 500)
-    private String seoKeywords;
-
-    @ElementCollection
-    @CollectionTable(name = "product_tags", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "tag")
-    private Set<String> tags = new HashSet<>();
-
-    @ManyToMany(mappedBy = "products")
-    private Set<DataSet> datasets = new HashSet<>();
-
-    @Column(name = "trend_score", precision = 5, scale = 2)
-    private BigDecimal trendScore;
-
-    @Column(name = "competition_level")
-    private Integer competitionLevel;
-
-    @Column(name = "profit_margin", precision = 5, scale = 2)
-    private BigDecimal profitMargin;
-
-    @ElementCollection
-    @CollectionTable(name = "product_platform_data", joinColumns = @JoinColumn(name = "product_id"))
-    @MapKeyColumn(name = "data_key")
-    @Column(name = "data_value")
-    private Map<String, String> platformSpecificData = new HashMap<>();
-
+    // ==============================================
+    // AI ANALYSIS FIELDS - SHARED BY GROUP + SOURCE
+    // ==============================================
     @Column(name = "ai_analyzed")
     private Boolean aiAnalyzed = false;
 
@@ -131,7 +100,7 @@ public class Product {
     @Column(name = "ai_confidence_score")
     private Double aiConfidenceScore = 0.0;
 
-    // Multilingual SEO Fields
+    // MULTILINGUAL SEO CONTENT - SHARED
     @Column(name = "seo_title_uk", length = 200)
     private String seoTitleUk;
 
@@ -174,12 +143,12 @@ public class Product {
     @Column(name = "tag")
     private Set<String> tagsEn = new HashSet<>();
 
-    // Category relationship
+    // CATEGORY RELATIONSHIP - SHARED BY GROUP
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private DatasetCategory category;
 
-    // AI Generated Attributes
+    // AI GENERATED ATTRIBUTES - SHARED
     @Column(name = "predicted_price_range", length = 50)
     private String predictedPriceRange;
 
@@ -201,6 +170,24 @@ public class Product {
     @Column(name = "main_features", length = 1000)
     private String mainFeatures;
 
+    @Column(name = "trend_score", precision = 5, scale = 2)
+    private BigDecimal trendScore;
+
+    @Column(name = "competition_level")
+    private Integer competitionLevel;
+
+    @Column(name = "profit_margin", precision = 5, scale = 2)
+    private BigDecimal profitMargin;
+
+    @ManyToMany(mappedBy = "products")
+    private Set<DataSet> datasets = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "product_platform_data", joinColumns = @JoinColumn(name = "product_id"))
+    @MapKeyColumn(name = "data_key")
+    @Column(name = "data_value")
+    private Map<String, String> platformSpecificData = new HashMap<>();
+
     @PrePersist
     @PreUpdate
     protected void onUpdate() {
@@ -214,8 +201,8 @@ public class Product {
 
     private void calculateSellingPrice() {
         if (originalPrice != null && markupPercentage != null) {
-            BigDecimal markup = originalPrice.multiply(markupPercentage).divide(BigDecimal.valueOf(100), 4
-                    , java.math.RoundingMode.HALF_UP);
+            BigDecimal markup = originalPrice.multiply(markupPercentage).divide(BigDecimal.valueOf(100), 4,
+                    java.math.RoundingMode.HALF_UP);
             sellingPrice = originalPrice.add(markup);
 
             if (originalPrice.compareTo(BigDecimal.ZERO) > 0) {
@@ -223,5 +210,15 @@ public class Product {
                         .multiply(BigDecimal.valueOf(100));
             }
         }
+    }
+
+    /**
+     * Get unique key for AI analysis sharing
+     */
+    public String getAiAnalysisKey() {
+        if (groupId != null && !groupId.trim().isEmpty()) {
+            return sourceType.name() + ":" + groupId;
+        }
+        return sourceType.name() + ":" + externalId;
     }
 }
