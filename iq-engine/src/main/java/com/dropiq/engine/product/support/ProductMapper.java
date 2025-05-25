@@ -46,6 +46,8 @@ public class ProductMapper {
             product.setAttributes(new HashMap<>(unifiedProduct.getAttributes()));
         }
 
+        product.calculateSellingPrice();
+
         return product;
     }
 

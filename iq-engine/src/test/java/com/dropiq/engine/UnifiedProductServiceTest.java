@@ -40,22 +40,50 @@ public class UnifiedProductServiceTest {
     private static final String EASYDROP_URL = "https://easydrop.one/prom-export?key=96368875021347&pid=55541082991053";
     private static final String MYDROP_URL = "https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=3c15e1e3250f59d703bc88175921945f778d68ca&price_field=price&param_name=Размер&stock_sync=true&only_available=true&static_sizes=true";
 
+    public static List<DataSourceConfig> createMyDropConfigs() {
+        return List.of(
+                create("https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=62c2de38cccf839c080c1c85b2f7589f23cb195e&price_field=drop_price&param_name=Размер&stock_sync=true&static_sizes=true"),
+                create("https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=2fbfe7afab670d328f37bd5cdc039d7afdc71ac7&price_field=drop_price&param_name=Размер&stock_sync=true&only_available=true"),
+                create("https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=9394bb97d8d05f585d913347e24bc739751038a9&price_field=drop_price&param_name=Размер&stock_sync=true&only_available=true"),
+                create("https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=4987f5f6a1a0781dcb29f895de2ac7814bd4e35a&price_field=drop_price&param_name=Размер&stock_sync=true&only_available=true"),
+                create("https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=f79042e5392c5b3f7d9eb3f20c9381c31332e85f&price_field=drop_price&param_name=Размер&stock_sync=true&only_available=true"),
+                create("https://backend.mydrop.com.ua/vendor/api/export/products/prom/yml?public_api_key=72f7e58850526f6cc8bb18d63196a21d299b1b2d&price_field=drop_price&param_name=Размер&stock_sync=true&only_available=true")
+        );
+    }
+
+    private static DataSourceConfig create(String url) {
+        DataSourceConfig config = new DataSourceConfig();
+        config.setUrl(url);
+        config.setPlatformType(SourceType.MYDROP);
+        config.setHeaders(Map.of()); // якщо не потрібно токенів чи хедерів
+        return config;
+    }
+
     @Test
     public void dataSet() {
-        DataSourceConfig easyConfig = new DataSourceConfig();
-        easyConfig.setUrl(EASYDROP_URL);
-        easyConfig.setPlatformType(SourceType.EASYDROP);
-        easyConfig.setHeaders(Map.of());
+//        DataSourceConfig easyConfig = new DataSourceConfig();
+//        easyConfig.setUrl("");
+//        easyConfig.setPlatformType(SourceType.MYDROP);
+//        easyConfig.setHeaders(Map.of());
+//
+//
+//        DataSet dataSet =
+//                dataSetService
+//                        .createDatasetFromSources("Prod Dataset", "Test", "Vlad", createMyDropConfigs());
 
 
-        DataSet dataSet =
-                dataSetService
-                        .createDatasetFromSources("Test 3", "Test", "Vlad", List.of(easyConfig));
+//        int count = 0;
+//        for (Product product : dataSet.getProducts()) {
+//            if (count <=5) {
+//                productAnalysisService.analyzeProduct(product.getId());
+//            } else {
+//                break;
+//            }
+//            count++;
+//        }
 
 
-        for (Product product : dataSet.getProducts()) {
-            productAnalysisService.analyzeProduct(product.getId());
-        }
+        productAnalysisService.analyzeDatasetProducts(2L);
     }
 
     @Test

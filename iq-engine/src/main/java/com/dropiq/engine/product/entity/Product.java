@@ -42,7 +42,7 @@ public class Product {
     private BigDecimal sellingPrice;
 
     @Column(name = "markup_percentage", precision = 5, scale = 2)
-    private BigDecimal markupPercentage;
+    private BigDecimal markupPercentage = BigDecimal.valueOf(10);
 
     @Column(name = "stock")
     private Integer stock = 0;
@@ -199,7 +199,7 @@ public class Product {
         calculateSellingPrice();
     }
 
-    private void calculateSellingPrice() {
+    public void calculateSellingPrice() {
         if (originalPrice != null && markupPercentage != null) {
             BigDecimal markup = originalPrice.multiply(markupPercentage).divide(BigDecimal.valueOf(100), 4,
                     java.math.RoundingMode.HALF_UP);
