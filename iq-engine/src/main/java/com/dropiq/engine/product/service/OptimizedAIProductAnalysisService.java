@@ -46,9 +46,7 @@ public class OptimizedAIProductAnalysisService {
     /**
      * Головний метод аналізу продукту одягу для Horoshop
      */
-    @Async
-    @Transactional
-    public CompletableFuture<Product> analyzeFashionProduct(Long productId) {
+    public Product analyzeFashionProduct(Long productId) {
         try {
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
@@ -62,7 +60,7 @@ public class OptimizedAIProductAnalysisService {
             if (cachedResult != null) {
                 log.info("Using cached analysis for group: {}", cacheKey);
                 applyAnalysisToProduct(product, cachedResult);
-                return CompletableFuture.completedFuture(productRepository.save(product));
+                return productRepository.save(product);
             }
 
             // Перевіряємо чи є аналіз у групі
@@ -70,7 +68,7 @@ public class OptimizedAIProductAnalysisService {
             if (analyzedGroupProduct.isPresent()) {
                 log.info("Copying analysis from group member");
                 copyAnalysisFromProduct(analyzedGroupProduct.get(), product);
-                return CompletableFuture.completedFuture(productRepository.save(product));
+                return productRepository.save(product);
             }
 
             // Виконуємо новий аналіз
@@ -91,20 +89,19 @@ public class OptimizedAIProductAnalysisService {
             shareAnalysisWithGroup(product, analysis);
 
             log.info("Fashion analysis completed for: {}", product.getName());
-            return CompletableFuture.completedFuture(product);
+            return product;
 
         } catch (Exception e) {
             log.error("Error analyzing fashion product {}: {}", productId, e.getMessage(), e);
-            return CompletableFuture.failedFuture(new RuntimeException("Fashion analysis failed", e));
+            throw  new RuntimeException("Fashion analysis failed", e);
         }
     }
 
     /**
      * Batch аналіз всіх продуктів одягу в датасеті
      */
-    @Async
-    @Transactional
-    public CompletableFuture<Integer> analyzeFashionDataset(Long datasetId) {
+
+    public Integer analyzeFashionDataset(Long datasetId) {
         try {
             DataSet dataset = dataSetRepository.findById(datasetId)
                     .orElseThrow(() -> new IllegalArgumentException("Dataset not found"));
@@ -118,7 +115,7 @@ public class OptimizedAIProductAnalysisService {
 
             if (productsToAnalyze.isEmpty()) {
                 log.info("No products need analysis in dataset: {}", dataset.getName());
-                return CompletableFuture.completedFuture(0);
+                return 0;
             }
 
             // Групуємо по варіантах для ефективності
@@ -181,11 +178,11 @@ public class OptimizedAIProductAnalysisService {
 
             log.info("Batch fashion analysis completed. Total analyzed: {}/{}",
                     totalAnalyzed, productsToAnalyze.size());
-            return CompletableFuture.completedFuture(totalAnalyzed);
+            return totalAnalyzed;
 
         } catch (Exception e) {
             log.error("Batch fashion analysis failed: {}", e.getMessage(), e);
-            return CompletableFuture.failedFuture(new RuntimeException("Batch analysis failed", e));
+           throw new RuntimeException("Batch analysis failed", e);
         }
     }
 
@@ -222,7 +219,7 @@ public class OptimizedAIProductAnalysisService {
             }
 
             // Додаткове SEO покращення для популярних товарів
-            if (result.getTrendScore() != null && result.getTrendScore() > 7.0) {
+            if (result.getTrendScore() != null && result.getTrendScore() >= 9) {
                 enhanceWithSEOContent(result, product);
             }
 
@@ -244,15 +241,15 @@ public class OptimizedAIProductAnalysisService {
 
         // Основний SEO контент
         if (analysis.getSeoTitle() != null) {
-            product.setSeoTitle(truncateText(analysis.getSeoTitle(), 200));
+            product.setSeoTitleUa(truncateText(analysis.getSeoTitle(), 200));
         }
 
         if (analysis.getDescription() != null) {
-            product.setDescription(analysis.getDescription());
+            product.setDescriptionUa(analysis.getDescription());
         }
 
         if (analysis.getMetaDescription() != null) {
-            product.setMetaDescription(truncateText(analysis.getMetaDescription(), 500));
+            product.setMetaDescriptionUa(truncateText(analysis.getMetaDescription(), 500));
         }
 
         // Теги
@@ -442,9 +439,9 @@ public class OptimizedAIProductAnalysisService {
     private void copyAnalysisFromProduct(Product source, Product target) {
         target.setAiAnalyzed(true);
         target.setAiAnalysisDate(LocalDateTime.now());
-        target.setSeoTitle(source.getSeoTitle());
-        target.setDescription(source.getDescription());
-        target.setMetaDescription(source.getMetaDescription());
+        target.setDescriptionUa(source.getDescriptionUa());
+        target.setMetaDescriptionUa(source.getMetaDescriptionUa());
+        target.setMetaDescriptionUa(source.getMetaDescriptionUa());
         target.setTags(new HashSet<>(source.getTags()));
         target.setTrendScore(source.getTrendScore());
         target.setBrand(source.getBrand());
@@ -698,7 +695,7 @@ public class OptimizedAIProductAnalysisService {
                     // Генеруємо додатковий SEO контент
                     FeatureProductAnalysisResult seoResult = gptProvider.generateSEOContent(
                             product.getName(),
-                            product.getDescription(),
+                            product.getDescriptionUa(),
                             product.getCategory() != null ? product.getCategory().getNameUk() : null,
                             product.getSellingPrice() != null ? product.getSellingPrice().doubleValue() : null
                     );
@@ -706,12 +703,12 @@ public class OptimizedAIProductAnalysisService {
                     // Оновлюємо контент якщо він кращий
                     boolean updated = false;
                     if (seoResult.getSeoTitle() != null && seoResult.getSeoTitle().length() > 20) {
-                        product.setSeoTitle(seoResult.getSeoTitle());
+                        product.setSeoTitleUa(seoResult.getSeoTitle());
                         updated = true;
                     }
 
                     if (seoResult.getMetaDescription() != null && seoResult.getMetaDescription().length() > 50) {
-                        product.setMetaDescription(seoResult.getMetaDescription());
+                        product.setMetaDescriptionUa(seoResult.getMetaDescription());
                         updated = true;
                     }
 

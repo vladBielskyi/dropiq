@@ -99,8 +99,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     /**
      * Find products with high profit margin
      */
-    @Query("SELECT p FROM Product p WHERE p.profitMargin >= :minMargin ORDER BY p.profitMargin DESC")
-    List<Product> findHighProfitProducts(@Param("minMargin") BigDecimal minMargin);
+    @Query("SELECT p FROM Product p WHERE p.markupPercentage >= :minMargin ORDER BY p.markupPercentage DESC")
+    List<Product> findHighProfitProducts(@Param("markupPercentage") BigDecimal markupPercentage);
 
     /**
      * Find recent products

@@ -60,6 +60,10 @@ public class UnifiedProductService {
                 }
 
                 List<UnifiedProduct> products = handler.fetchProducts(config.getUrl(), config.getHeaders());
+               if (!config.getExportUnavailable()) {
+                   products.stream().filter(x -> x != null && !x.isInStock())
+                           .forEach(products::remove);
+               }
                 allProducts.addAll(products);
 
             } catch (Exception e) {
@@ -214,7 +218,7 @@ public class UnifiedProductService {
 
         // Available vs unavailable
         long availableCount = allProducts.stream()
-                .mapToLong(product -> product.isAvailable() ? 1 : 0)
+                .mapToLong(product -> product.getAvailable() ? 1 : 0)
                 .sum();
         stats.put("availableProducts", availableCount);
         stats.put("unavailableProducts", allProducts.size() - availableCount);

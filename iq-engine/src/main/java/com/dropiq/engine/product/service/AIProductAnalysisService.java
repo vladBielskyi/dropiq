@@ -181,12 +181,12 @@ public class AIProductAnalysisService {
         // Set AI flags
         product.setAiAnalyzed(true);
         product.setAiAnalysisDate(LocalDateTime.now());
-        product.setAiConfidenceScore(calculateConfidenceScore(analysis));
+       // product.setAiConfidenceScore(calculateConfidenceScore(analysis));
 
         // Set SEO optimized name (if available)
         if (analysis.getSeoOptimizedName() != null) {
             // Store in platform specific data for now
-            product.getPlatformSpecificData().put("seo_name", analysis.getSeoOptimizedName());
+           // product.getPlatformSpecificData().put("seo_name", analysis.getSeoOptimizedName());
         }
 
         // Set category hierarchy
@@ -205,72 +205,72 @@ public class AIProductAnalysisService {
 //        }
 
         // Set multilingual SEO content
-        if (analysis.getSeoTitles() != null) {
-            product.setSeoTitleUk(analysis.getSeoTitles().get("uk"));
-            product.setSeoTitleRu(analysis.getSeoTitles().get("ru"));
-            product.setSeoTitleEn(analysis.getSeoTitles().get("en"));
-        }
-
-        if (analysis.getDescriptions() != null) {
-            product.setDescriptionUk(analysis.getDescriptions().get("uk"));
-            product.setDescriptionRu(analysis.getDescriptions().get("ru"));
-            product.setDescriptionEn(analysis.getDescriptions().get("en"));
-        }
-
-        if (analysis.getMetaDescriptions() != null) {
-            product.setMetaDescriptionUk(analysis.getMetaDescriptions().get("uk"));
-            product.setMetaDescriptionRu(analysis.getMetaDescriptions().get("ru"));
-            product.setMetaDescriptionEn(analysis.getMetaDescriptions().get("en"));
-        }
-
-        // Set tags
-        if (analysis.getTags() != null) {
-            product.setTagsUk(new HashSet<>(analysis.getTags().getOrDefault("uk", new ArrayList<>())));
-            product.setTagsRu(new HashSet<>(analysis.getTags().getOrDefault("ru", new ArrayList<>())));
-            product.setTagsEn(new HashSet<>(analysis.getTags().getOrDefault("en", new ArrayList<>())));
-        }
-
-        // Set target audience
-        if (analysis.getTargetAudience() != null) {
-            product.setTargetAudienceUk(analysis.getTargetAudience().get("uk"));
-            product.setTargetAudienceRu(analysis.getTargetAudience().get("ru"));
-            product.setTargetAudienceEn(analysis.getTargetAudience().get("en"));
-        }
-
-        // Set AI-generated attributes
-        product.setTrendScore(BigDecimal.valueOf(analysis.getTrendScore() != null ? analysis.getTrendScore() : 5.0));
-        product.setPredictedPriceRange(analysis.getPredictedPriceRange());
-        product.setStyleTags(analysis.getStyle());
-
-        // Set additional attributes
-        if (analysis.getMainFeatures() != null && !analysis.getMainFeatures().isEmpty()) {
-            product.setMainFeatures(String.join(", ", analysis.getMainFeatures()));
-        }
-
-        if (analysis.getColors() != null && !analysis.getColors().isEmpty()) {
-            product.setColorAnalysis(String.join(", ", analysis.getColors()));
-        }
-
-        // Store extended analysis data
-        if (analysis.getSellingPoints() != null) {
-            product.getPlatformSpecificData().put("selling_points", String.join("; ", analysis.getSellingPoints()));
-        }
-
-        if (analysis.getCompetitiveAdvantage() != null) {
-            product.getPlatformSpecificData().put("competitive_advantage", analysis.getCompetitiveAdvantage());
-        }
-
-        if (analysis.getUrgencyTriggers() != null) {
-            product.getPlatformSpecificData().put("urgency_triggers", analysis.getUrgencyTriggers());
-        }
-
-        if (analysis.getBrandDetected() != null) {
-            product.getPlatformSpecificData().put("detected_brand", analysis.getBrandDetected());
-        }
-
-        if (analysis.getModelName() != null) {
-            product.getPlatformSpecificData().put("model_name", analysis.getModelName());
-        }
+//        if (analysis.getSeoTitles() != null) {
+//            product.setSeoTitleUk(analysis.getSeoTitles().get("uk"));
+//            product.setSeoTitleRu(analysis.getSeoTitles().get("ru"));
+//            product.setSeoTitleEn(analysis.getSeoTitles().get("en"));
+//        }
+//
+//        if (analysis.getDescriptions() != null) {
+//            product.setDescriptionUk(analysis.getDescriptions().get("uk"));
+//            product.setDescriptionRu(analysis.getDescriptions().get("ru"));
+//            product.setDescriptionEn(analysis.getDescriptions().get("en"));
+//        }
+//
+//        if (analysis.getMetaDescriptions() != null) {
+//            product.setMetaDescriptionUk(analysis.getMetaDescriptions().get("uk"));
+//            product.setMetaDescriptionRu(analysis.getMetaDescriptions().get("ru"));
+//            product.setMetaDescriptionEn(analysis.getMetaDescriptions().get("en"));
+//        }
+//
+//        // Set tags
+//        if (analysis.getTags() != null) {
+//            product.setTagsUk(new HashSet<>(analysis.getTags().getOrDefault("uk", new ArrayList<>())));
+//            product.setTagsRu(new HashSet<>(analysis.getTags().getOrDefault("ru", new ArrayList<>())));
+//            product.setTagsEn(new HashSet<>(analysis.getTags().getOrDefault("en", new ArrayList<>())));
+//        }
+//
+//        // Set target audience
+//        if (analysis.getTargetAudience() != null) {
+//            product.setTargetAudienceUk(analysis.getTargetAudience().get("uk"));
+//            product.setTargetAudienceRu(analysis.getTargetAudience().get("ru"));
+//            product.setTargetAudienceEn(analysis.getTargetAudience().get("en"));
+//        }
+//
+//        // Set AI-generated attributes
+//        product.setTrendScore(BigDecimal.valueOf(analysis.getTrendScore() != null ? analysis.getTrendScore() : 5.0));
+//        product.setPredictedPriceRange(analysis.getPredictedPriceRange());
+//        product.setStyleTags(analysis.getStyle());
+//
+//        // Set additional attributes
+//        if (analysis.getMainFeatures() != null && !analysis.getMainFeatures().isEmpty()) {
+//            product.setMainFeatures(String.join(", ", analysis.getMainFeatures()));
+//        }
+//
+//        if (analysis.getColors() != null && !analysis.getColors().isEmpty()) {
+//            product.setColorAnalysis(String.join(", ", analysis.getColors()));
+//        }
+//
+//        // Store extended analysis data
+//        if (analysis.getSellingPoints() != null) {
+//            product.getPlatformSpecificData().put("selling_points", String.join("; ", analysis.getSellingPoints()));
+//        }
+//
+//        if (analysis.getCompetitiveAdvantage() != null) {
+//            product.getPlatformSpecificData().put("competitive_advantage", analysis.getCompetitiveAdvantage());
+//        }
+//
+//        if (analysis.getUrgencyTriggers() != null) {
+//            product.getPlatformSpecificData().put("urgency_triggers", analysis.getUrgencyTriggers());
+//        }
+//
+//        if (analysis.getBrandDetected() != null) {
+//            product.getPlatformSpecificData().put("detected_brand", analysis.getBrandDetected());
+//        }
+//
+//        if (analysis.getModelName() != null) {
+//            product.getPlatformSpecificData().put("model_name", analysis.getModelName());
+//        }
     }
 
     /**
@@ -421,43 +421,43 @@ public class AIProductAnalysisService {
     private void copyAnalysisFromProduct(Product source, Product target) {
         target.setAiAnalyzed(true);
         target.setAiAnalysisDate(LocalDateTime.now());
-        target.setAiConfidenceScore(source.getAiConfidenceScore());
+       // target.setAiConfidenceScore(source.getAiConfidenceScore());
         target.setCategory(source.getCategory());
 
         // Copy all multilingual content
-        target.setSeoTitleUk(source.getSeoTitleUk());
-        target.setSeoTitleRu(source.getSeoTitleRu());
-        target.setSeoTitleEn(source.getSeoTitleEn());
-
-        target.setDescriptionUk(source.getDescriptionUk());
-        target.setDescriptionRu(source.getDescriptionRu());
-        target.setDescriptionEn(source.getDescriptionEn());
-
-        target.setMetaDescriptionUk(source.getMetaDescriptionUk());
-        target.setMetaDescriptionRu(source.getMetaDescriptionRu());
-        target.setMetaDescriptionEn(source.getMetaDescriptionEn());
-
-        target.setTagsUk(new HashSet<>(source.getTagsUk()));
-        target.setTagsRu(new HashSet<>(source.getTagsRu()));
-        target.setTagsEn(new HashSet<>(source.getTagsEn()));
-
-        target.setTargetAudienceUk(source.getTargetAudienceUk());
-        target.setTargetAudienceRu(source.getTargetAudienceRu());
-        target.setTargetAudienceEn(source.getTargetAudienceEn());
-
-        // Copy AI attributes
-        target.setTrendScore(source.getTrendScore());
-        target.setPredictedPriceRange(source.getPredictedPriceRange());
-        target.setStyleTags(source.getStyleTags());
-        target.setMainFeatures(source.getMainFeatures());
-        target.setColorAnalysis(source.getColorAnalysis());
-
-        // Copy platform specific data
-        source.getPlatformSpecificData().forEach((key, value) -> {
-            if (key.startsWith("seo_") || key.startsWith("selling_") || key.startsWith("competitive_")) {
-                target.getPlatformSpecificData().put(key, value);
-            }
-        });
+//        target.setSeoTitleUk(source.getSeoTitleUk());
+//        target.setSeoTitleRu(source.getSeoTitleRu());
+//        target.setSeoTitleEn(source.getSeoTitleEn());
+//
+//        target.setDescriptionUk(source.getDescriptionUk());
+//        target.setDescriptionRu(source.getDescriptionRu());
+//        target.setDescriptionEn(source.getDescriptionEn());
+//
+//        target.setMetaDescriptionUk(source.getMetaDescriptionUk());
+//        target.setMetaDescriptionRu(source.getMetaDescriptionRu());
+//        target.setMetaDescriptionEn(source.getMetaDescriptionEn());
+//
+//        target.setTagsUk(new HashSet<>(source.getTagsUk()));
+//        target.setTagsRu(new HashSet<>(source.getTagsRu()));
+//        target.setTagsEn(new HashSet<>(source.getTagsEn()));
+//
+//        target.setTargetAudienceUk(source.getTargetAudienceUk());
+//        target.setTargetAudienceRu(source.getTargetAudienceRu());
+//        target.setTargetAudienceEn(source.getTargetAudienceEn());
+//
+//        // Copy AI attributes
+//        target.setTrendScore(source.getTrendScore());
+//        target.setPredictedPriceRange(source.getPredictedPriceRange());
+//        target.setStyleTags(source.getStyleTags());
+//        target.setMainFeatures(source.getMainFeatures());
+//        target.setColorAnalysis(source.getColorAnalysis());
+//
+//        // Copy platform specific data
+//        source.getPlatformSpecificData().forEach((key, value) -> {
+//            if (key.startsWith("seo_") || key.startsWith("selling_") || key.startsWith("competitive_")) {
+//                target.getPlatformSpecificData().put(key, value);
+//            }
+//        });
     }
 
     /**

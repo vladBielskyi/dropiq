@@ -8,5 +8,6 @@ import java.util.Map;
 public class DataSourceConfig {
     private SourceType platformType;            // EASYDROP, MYDROP, etc.
     private String url;                     // API URL
-    private Map<String, String> headers;    // API headers
+    private Map<String, String> headers;
+    private Boolean exportUnavailable;// API headers
 }
