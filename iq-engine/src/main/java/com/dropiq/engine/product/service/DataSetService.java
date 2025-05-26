@@ -376,13 +376,13 @@ public class DataSetService {
                 productMapper.updateProduct(product, freshProduct.get());
                 product.setLastSync(LocalDateTime.now());
                 productRepository.save(product);
-                log.info("Product '{}' updated successfully", product.getName());
+                log.info("Product '{}' updated successfully", product.getExternalName());
             } else {
-                log.warn("Product '{}' not found in source data", product.getName());
+                log.warn("Product '{}' not found in source data", product.getExternalName());
             }
 
         } catch (Exception e) {
-            log.error("Failed to update product '{}': {}", product.getName(), e.getMessage());
+            log.error("Failed to update product '{}': {}", product.getExternalName(), e.getMessage());
             throw new RuntimeException("Failed to update product: " + e.getMessage(), e);
         }
     }

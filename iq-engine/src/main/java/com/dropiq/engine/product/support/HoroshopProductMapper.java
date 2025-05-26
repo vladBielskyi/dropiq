@@ -30,7 +30,7 @@ public class HoroshopProductMapper {
      * Конвертація Product в HoroshopProduct (оптимізовано)
      */
     public HoroshopProduct toHoroshopProduct(Product product, DataSet dataset) {
-        log.debug("Converting product {} to Horoshop format", product.getName());
+        log.debug("Converting product {} to Horoshop format", product.getExternalName());
 
         // Підготовка продукту до експорту
         product.prepareForHoroshopExport();
@@ -43,10 +43,6 @@ public class HoroshopProductMapper {
 
         horoshopProduct.setArticle(product.getHoroshopArticleOrDefault());
 
-        if (product.isVariant()) {
-            // Для варіантів встановлюємо parent_article
-            horoshopProduct.setParentArticle(product.getGroupId());
-        }
 
         // ==============================================
         // МУЛЬТИМОВНІ ЗАГОЛОВКИ (ОПТИМІЗОВАНО)
@@ -78,15 +74,15 @@ public class HoroshopProductMapper {
         // ==============================================
 
         Map<String, String> shortDescriptions = new HashMap<>();
-        String metaUa = product.getOptimizedMetaDescription("ua");
-        String metaRu = product.getOptimizedMetaDescription("ru");
+//        String metaUa = product.getOptimizedMetaDescription("ua");
+//        String metaRu = product.getOptimizedMetaDescription("ru");
 
-        if (metaUa != null) {
-            shortDescriptions.put("ua", metaUa);
-        }
-        if (metaRu != null) {
-            shortDescriptions.put("ru", metaRu);
-        }
+//        if (metaUa != null) {
+//            shortDescriptions.put("ua", metaUa);
+//        }
+//        if (metaRu != null) {
+//            shortDescriptions.put("ru", metaRu);
+//        }
         horoshopProduct.setShortDescription(shortDescriptions);
 
         // ==============================================
@@ -180,7 +176,7 @@ public class HoroshopProductMapper {
 
         setupGuaranteesAndPromotions(product, horoshopProduct);
 
-        log.debug("Successfully converted product {} to Horoshop format", product.getName());
+        log.debug("Successfully converted product {} to Horoshop format", product.getExternalName());
         return horoshopProduct;
     }
 
@@ -188,7 +184,7 @@ public class HoroshopProductMapper {
      * Конвертація HoroshopProduct назад в Product
      */
     public void updateFromHoroshopProduct(Product product, HoroshopProduct horoshopProduct) {
-        log.debug("Updating product {} from Horoshop data", product.getName());
+        log.debug("Updating product {} from Horoshop data", product.getExternalName());
 
         // Оновлення наявності та складу
         if (horoshopProduct.getQuantity() != null) {
@@ -214,16 +210,16 @@ public class HoroshopProductMapper {
             }
 
             // Додаєм нові зображення
-            horoshopProduct.getImages().getLinks().forEach(imageUrl -> {
-                product.addImageUrl(imageUrl);
-            });
+//            horoshopProduct.getImages().getLinks().forEach(imageUrl -> {
+//                product.addImageUrl(imageUrl);
+//            });
         }
 
         // Оновлення статусу синхронізації
         product.setLastSync(LocalDateTime.now());
         product.updateHoroshopExportStatus(true, "Updated from Horoshop");
 
-        log.debug("Successfully updated product {} from Horoshop data", product.getName());
+        log.debug("Successfully updated product {} from Horoshop data", product.getExternalName());
     }
 
     /**
@@ -352,11 +348,11 @@ public class HoroshopProductMapper {
      */
     private void setupGuaranteesAndPromotions(Product product, HoroshopProduct horoshopProduct) {
         // Гарантія магазину
-        if (product.getBrand() != null &&
-                !product.getBrand().toLowerCase().contains("noname")) {
-            horoshopProduct.setGuaranteeShop("Гарантия качества");
-            horoshopProduct.setGuaranteeLength(12); // 12 місяців
-        }
+//        if (product.getBrand() != null &&
+//                !product.getBrand().toLowerCase().contains("noname")) {
+//            horoshopProduct.setGuaranteeShop("Гарантия качества");
+//            horoshopProduct.setGuaranteeLength(12); // 12 місяців
+//        }
 
         // Акційні таймери для популярних товарів
         if (product.isPopular() && product.hasLowStock()) {
@@ -387,7 +383,7 @@ public class HoroshopProductMapper {
 
         // Створюємо головний продукт
         HoroshopProduct parentProduct = toHoroshopProduct(mainProduct, dataset);
-        parentProduct.setParentArticle(mainProduct.getGroupId());
+        parentProduct.setParentArticle(mainProduct.getExternalGroupId());
         result.add(parentProduct);
 
         // Створюємо варіанти
@@ -424,13 +420,13 @@ public class HoroshopProductMapper {
 //        }
 
         // Інші відмінності
-        variant.getAttributes().forEach((key, value) -> {
-            String mainValue = mainProduct.getAttribute(key);
-            if (value != null && !value.equals(mainValue)) {
-                String translatedKey = translateAttributeName(key) + " варианта";
-              //  variantCharacteristics.add(new HoroshopCharacteristic(translatedKey, value));
-            }
-        });
+//        variant.getAttributes().forEach((key, value) -> {
+//            String mainValue = mainProduct.getAttribute(key);
+//            if (value != null && !value.equals(mainValue)) {
+//                String translatedKey = translateAttributeName(key) + " варианта";
+//              //  variantCharacteristics.add(new HoroshopCharacteristic(translatedKey, value));
+//            }
+//        });
 
         childProduct.setCharacteristics(variantCharacteristics);
     }
@@ -504,7 +500,7 @@ public class HoroshopProductMapper {
     }
 
     private String generateProductSlug(Product product) {
-        String base = product.getName().toLowerCase()
+        String base = product.getExternalName().toLowerCase()
                 .replaceAll("[^a-z0-9а-я\\s-]", "")
                 .replaceAll("\\s+", "-")
                 .replaceAll("-+", "-")
@@ -592,15 +588,15 @@ public class HoroshopProductMapper {
             score += Math.min(product.getDescriptionUa().length() / 10, 50);
         }
 
-        // AI аналіз
-        if (product.getAiAnalyzed()) {
-            score += 20;
-        }
-
-        // SEO оптимізація
-        if (product.getSeoOptimized()) {
-            score += 15;
-        }
+//        // AI аналіз
+//        if (product.getAiAnalyzed()) {
+//            score += 20;
+//        }
+//
+//        // SEO оптимізація
+//        if (product.getSeoOptimized()) {
+//            score += 15;
+//        }
 
         return score;
     }

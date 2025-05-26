@@ -3,7 +3,6 @@ package com.dropiq.engine.product.service;
 import com.dropiq.engine.integration.ai.GPT4MiniClient;
 import com.dropiq.engine.integration.ai.model.FeatureProductAnalysisResult;
 import com.dropiq.engine.product.entity.DataSet;
-import com.dropiq.engine.product.entity.DatasetCategory;
 import com.dropiq.engine.product.entity.Product;
 import com.dropiq.engine.product.repository.DataSetRepository;
 import com.dropiq.engine.product.repository.ProductRepository;
@@ -12,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -52,7 +50,7 @@ public class OptimizedAIProductAnalysisService {
                     .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
 
             log.info("Starting fashion analysis for: {} (Group: {})",
-                    product.getName(), product.getGroupId());
+                    product.getExternalName(), product.getExternalGroupId());
 
             // Перевіряємо кеш
             String cacheKey = generateCacheKey(product);
@@ -76,7 +74,7 @@ public class OptimizedAIProductAnalysisService {
 
             // Валідуємо результат
             if (!analysis.isValid()) {
-                log.warn("Analysis result invalid, using fallback for: {}", product.getName());
+                log.warn("Analysis result invalid, using fallback for: {}", product.getExternalName());
                 analysis = createFallbackAnalysis(product);
             }
 
@@ -88,7 +86,7 @@ public class OptimizedAIProductAnalysisService {
             // Поширюємо на групу
             shareAnalysisWithGroup(product, analysis);
 
-            log.info("Fashion analysis completed for: {}", product.getName());
+            log.info("Fashion analysis completed for: {}", product.getExternalName());
             return product;
 
         } catch (Exception e) {
@@ -110,7 +108,7 @@ public class OptimizedAIProductAnalysisService {
                     dataset.getName(), dataset.getTotalProducts());
 
             List<Product> productsToAnalyze = dataset.getProducts().stream()
-                    .filter(p -> !Boolean.TRUE.equals(p.getAiAnalyzed()))
+                    .filter(p -> p.getAiAnalysisDate() != null)
                     .collect(Collectors.toList());
 
             if (productsToAnalyze.isEmpty()) {
@@ -190,7 +188,7 @@ public class OptimizedAIProductAnalysisService {
      * Виконання аналізу одягу з використанням GPT-4 Mini
      */
     private FeatureProductAnalysisResult performFashionAnalysis(Product product) {
-        log.info("Performing GPT-4 Mini fashion analysis for: {}", product.getName());
+        log.info("Performing GPT-4 Mini fashion analysis for: {}", product.getExternalName());
 
         try {
 
@@ -202,8 +200,8 @@ public class OptimizedAIProductAnalysisService {
                 log.info("Using vision analysis with image: {}", imageUrl);
 
                 result = gptProvider.analyzeProductWithImage(
-                        product.getName(),
-                        cleanDescription(product.getOriginalDescription()),
+                        product.getExternalName(),
+                        cleanDescription(product.getExternalDescription()),
                         imageUrl,
                         product.getOriginalPrice() != null ? product.getOriginalPrice().doubleValue() : null
                 );
@@ -211,8 +209,8 @@ public class OptimizedAIProductAnalysisService {
                 log.info("Using text-based analysis");
 
                 result = gptProvider.analyzeProduct(
-                        product.getName(),
-                        cleanDescription(product.getOriginalDescription()),
+                        product.getExternalName(),
+                        cleanDescription(product.getExternalDescription()),
                         product.getExternalCategoryName(),
                         product.getOriginalPrice() != null ? product.getOriginalPrice().doubleValue() : null
                 );
@@ -226,7 +224,7 @@ public class OptimizedAIProductAnalysisService {
             return result;
 
         } catch (Exception e) {
-            log.warn("GPT analysis failed for {}, creating fallback: {}", product.getName(), e.getMessage());
+            log.warn("GPT analysis failed for {}, creating fallback: {}", product.getExternalName(), e.getMessage());
             return createFallbackAnalysis(product);
         }
     }
@@ -236,7 +234,6 @@ public class OptimizedAIProductAnalysisService {
      */
     private void applyAnalysisToProduct(Product product, FeatureProductAnalysisResult analysis) {
         // AI статус
-        product.setAiAnalyzed(true);
         product.setAiAnalysisDate(LocalDateTime.now());
 
         // Основний SEO контент
@@ -273,7 +270,7 @@ public class OptimizedAIProductAnalysisService {
         // Присвоєння категорії
         assignProductCategory(product, analysis);
 
-        log.debug("Applied fashion analysis to: {}", product.getName());
+        log.debug("Applied fashion analysis to: {}", product.getExternalName());
     }
 
     /**
@@ -282,7 +279,7 @@ public class OptimizedAIProductAnalysisService {
     private void extractFashionAttributes(Product product, FeatureProductAnalysisResult analysis) {
         // Основні атрибути
         if (analysis.getBrandName() != null) {
-            product.setBrand(analysis.getBrandName());
+            product.setDetectedBrandName(analysis.getBrandName());
         }
 
         if (analysis.getPrimaryColor() != null) {
@@ -353,7 +350,7 @@ public class OptimizedAIProductAnalysisService {
 //                category.addProduct(product);
 //            }
         } catch (Exception e) {
-            log.warn("Failed to assign category for {}: {}", product.getName(), e.getMessage());
+            log.warn("Failed to assign category for {}: {}", product.getExternalName(), e.getMessage());
         }
     }
 
@@ -363,7 +360,7 @@ public class OptimizedAIProductAnalysisService {
     private void enhanceWithSEOContent(FeatureProductAnalysisResult result, Product product) {
         try {
             FeatureProductAnalysisResult seoResult = gptProvider.generateSEOContent(
-                    product.getName(),
+                    product.getExternalName(),
                     result.getDescription(),
                     result.getMainCategory(),
                     product.getSellingPrice() != null ? product.getSellingPrice().doubleValue() : null
@@ -389,7 +386,7 @@ public class OptimizedAIProductAnalysisService {
     private FeatureProductAnalysisResult createFallbackAnalysis(Product product) {
         FeatureProductAnalysisResult result = new FeatureProductAnalysisResult();
 
-        String productName = product.getName();
+        String productName = product.getExternalName();
         String categoryName = product.getExternalCategoryName();
 
         // Основний контент
@@ -421,30 +418,29 @@ public class OptimizedAIProductAnalysisService {
     // ===== ДОПОМІЖНІ МЕТОДИ =====
 
     private String generateCacheKey(Product product) {
-        if (product.getGroupId() != null && !product.getGroupId().trim().isEmpty()) {
-            return product.getSourceType().name() + ":" + product.getGroupId();
+        if (product.getExternalGroupId() != null && !product.getExternalGroupId().trim().isEmpty()) {
+            return product.getSourceType().name() + ":" + product.getExternalGroupId();
         }
         return product.getSourceType().name() + ":single:" + product.getExternalId();
     }
 
     private Optional<Product> findAnalyzedProductInGroup(Product product) {
-        if (product.getGroupId() == null) return Optional.empty();
+        if (product.getExternalGroupId() == null) return Optional.empty();
 
-        return productRepository.findByGroupIdAndSourceTypeAndAiAnalyzedTrue(
-                product.getGroupId(),
+        return productRepository.findByExternalGroupIdAndSourceTypeAndAiAnalysisDateIsNotNull(
+                product.getExternalGroupId(),
                 product.getSourceType()
         ).stream().findFirst();
     }
 
     private void copyAnalysisFromProduct(Product source, Product target) {
-        target.setAiAnalyzed(true);
         target.setAiAnalysisDate(LocalDateTime.now());
         target.setDescriptionUa(source.getDescriptionUa());
         target.setMetaDescriptionUa(source.getMetaDescriptionUa());
         target.setMetaDescriptionUa(source.getMetaDescriptionUa());
         target.setTags(new HashSet<>(source.getTags()));
         target.setTrendScore(source.getTrendScore());
-        target.setBrand(source.getBrand());
+        target.setDetectedBrandName(source.getDetectedBrandName());
         target.setColor(source.getColor());
         target.setMaterial(source.getMaterial());
         target.setCategory(source.getCategory());
@@ -454,10 +450,10 @@ public class OptimizedAIProductAnalysisService {
     }
 
     private void shareAnalysisWithGroup(Product analyzedProduct, FeatureProductAnalysisResult analysis) {
-        if (analyzedProduct.getGroupId() == null) return;
+        if (analyzedProduct.getExternalGroupId() == null) return;
 
-        List<Product> groupProducts = productRepository.findByGroupIdAndSourceTypeAndAiAnalyzedFalse(
-                analyzedProduct.getGroupId(),
+        List<Product> groupProducts = productRepository.findByExternalGroupIdAndSourceTypeAndAiAnalysisDateIsNull(
+                analyzedProduct.getExternalGroupId(),
                 analyzedProduct.getSourceType()
         );
 
@@ -469,7 +465,7 @@ public class OptimizedAIProductAnalysisService {
         }
 
         log.info("Shared analysis with {} products in group: {}",
-                groupProducts.size(), analyzedProduct.getGroupId());
+                groupProducts.size(), analyzedProduct.getExternalGroupId());
     }
 
     private Product selectBestRepresentative(List<Product> products) {
@@ -477,7 +473,7 @@ public class OptimizedAIProductAnalysisService {
         return products.stream()
                 .max(Comparator.comparing(p ->
                         (p.getImageUrls().size() * 10) +
-                                (p.getOriginalDescription() != null ? p.getOriginalDescription().length() : 0)))
+                                (p.getExternalDescription() != null ? p.getExternalDescription().length() : 0)))
                 .orElse(products.get(0));
     }
 
@@ -522,11 +518,11 @@ public class OptimizedAIProductAnalysisService {
     private String generateFallbackDescription(Product product) {
         StringBuilder desc = new StringBuilder();
 
-        desc.append("Якісний ").append(product.getName().toLowerCase())
+        desc.append("Якісний ").append(product.getExternalName().toLowerCase())
                 .append(" преміум класу за доступною ціною. ");
 
-        if (product.getOriginalDescription() != null && !product.getOriginalDescription().isEmpty()) {
-            String cleaned = cleanDescription(product.getOriginalDescription());
+        if (product.getExternalDescription() != null && !product.getExternalDescription().isEmpty()) {
+            String cleaned = cleanDescription(product.getExternalDescription());
             if (cleaned.length() > 100) {
                 desc.append(cleaned.substring(0, 100)).append("... ");
             } else {
@@ -694,7 +690,7 @@ public class OptimizedAIProductAnalysisService {
                 try {
                     // Генеруємо додатковий SEO контент
                     FeatureProductAnalysisResult seoResult = gptProvider.generateSEOContent(
-                            product.getName(),
+                            product.getExternalName(),
                             product.getDescriptionUa(),
                             product.getCategory() != null ? product.getCategory().getNameUk() : null,
                             product.getSellingPrice() != null ? product.getSellingPrice().doubleValue() : null

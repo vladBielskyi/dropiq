@@ -279,7 +279,7 @@ public class HoroshopRobustSyncService {
 
         // Minimal title (required for updates)
         Map<String, String> title = new HashMap<>();
-        title.put("en", product.getName());
+        title.put("en", product.getExternalName());
         horoshopProduct.setTitle(title);
 
         return horoshopProduct;

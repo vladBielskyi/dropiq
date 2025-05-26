@@ -61,7 +61,7 @@ public class UnifiedProductService {
 
                 List<UnifiedProduct> products = handler.fetchProducts(config.getUrl(), config.getHeaders());
                if (!config.getExportUnavailable()) {
-                   products.stream().filter(x -> x != null && !x.isInStock())
+                   products.stream().filter(x -> x != null && x.getStock() == 0)
                            .forEach(products::remove);
                }
                 allProducts.addAll(products);
@@ -95,8 +95,8 @@ public class UnifiedProductService {
                 UnifiedProduct firstProduct = productList.get(0);
                 variantGroup.setName(firstProduct.getName());
                 variantGroup.setDescription(firstProduct.getDescription());
-                variantGroup.setCategoryId(firstProduct.getExternalCategoryId());
-                variantGroup.setCategoryName(firstProduct.getExternalCategoryName());
+                variantGroup.setCategoryId(firstProduct.getCategoryId());
+                variantGroup.setCategoryName(firstProduct.getCategoryName());
                 variantGroup.getImageUrls().addAll(firstProduct.getImageUrls());
             }
 
@@ -151,8 +151,8 @@ public class UnifiedProductService {
                     UnifiedProduct firstProduct = productList.get(0);
                     group.setName(firstProduct.getName());
                     group.setDescription(firstProduct.getDescription());
-                    group.setCategoryId(firstProduct.getExternalCategoryId());
-                    group.setCategoryName(firstProduct.getExternalCategoryName());
+                    group.setCategoryId(firstProduct.getCategoryId());
+                    group.setCategoryName(firstProduct.getCategoryName());
                     group.getImageUrls().addAll(firstProduct.getImageUrls());
                 }
 
@@ -176,7 +176,7 @@ public class UnifiedProductService {
         List<UnifiedProduct> allProducts = fetchProductsFromPlatform(platformType, url, headers);
 
         return allProducts.stream()
-                .filter(product -> categoryId.equals(product.getExternalCategoryId()))
+                .filter(product -> categoryId.equals(product.getCategoryId()))
                 .collect(Collectors.toList());
     }
 
@@ -212,8 +212,8 @@ public class UnifiedProductService {
 
         // Group by category
         Map<String, Long> categoryStats = allProducts.stream()
-                .filter(product -> product.getExternalCategoryId() != null)
-                .collect(Collectors.groupingBy(UnifiedProduct::getExternalCategoryId, Collectors.counting()));
+                .filter(product -> product.getCategoryId() != null)
+                .collect(Collectors.groupingBy(UnifiedProduct::getCategoryId, Collectors.counting()));
         stats.put("productsByCategory", categoryStats);
 
         // Available vs unavailable

@@ -34,11 +34,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByStatus(ProductStatus status);
 
     /**
-     * Find products by group ID
-     */
-    List<Product> findByGroupId(String groupId);
-
-    /**
      * Find products by category
      */
     List<Product> findByExternalCategoryId(String categoryId);
@@ -55,21 +50,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     List<Product> findByAvailableTrue();
 
-    List<Product> findByGroupIdAndSourceTypeAndAiAnalyzedTrue(String groupId, SourceType sourceType);
+    List<Product> findByExternalGroupIdAndSourceTypeAndAiAnalysisDateIsNotNull(String groupId, SourceType sourceType);
 
-    List<Product> findByGroupIdAndSourceTypeAndAiAnalyzedFalse(String groupId, SourceType sourceType);
+    List<Product> findByExternalGroupIdAndSourceTypeAndAiAnalysisDateIsNull(String egroupId, SourceType sourceType);
 
     /**
      * Find products that need sync (haven't been synced recently)
      */
     @Query("SELECT p FROM Product p WHERE p.lastSync IS NULL OR p.lastSync < :cutoffTime")
     List<Product> findProductsNeedingSync(@Param("cutoffTime") LocalDateTime cutoffTime);
-
-    /**
-     * Search products by name
-     */
-    @Query("SELECT p FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    Page<Product> searchByName(@Param("searchTerm") String searchTerm, Pageable pageable);
 
     /**
      * Find products by trend score range
@@ -109,26 +98,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findRecentProducts(@Param("since") LocalDateTime since);
 
     /**
-     * Find products by multiple criteria (for advanced filtering)
-     */
-    @Query("SELECT p FROM Product p WHERE " +
-            "(:sourceType IS NULL OR p.sourceType = :sourceType) AND " +
-            "(:status IS NULL OR p.status = :status) AND " +
-            "(:categoryId IS NULL OR p.externalCategoryId = :categoryId) AND " +
-            "(:minPrice IS NULL OR p.sellingPrice >= :minPrice) AND " +
-            "(:maxPrice IS NULL OR p.sellingPrice <= :maxPrice) AND " +
-            "(:available IS NULL OR p.available = :available) AND " +
-            "(:searchTerm IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
-    Page<Product> findWithCriteria(@Param("sourceType") SourceType sourceType,
-                                   @Param("status") ProductStatus status,
-                                   @Param("categoryId") String categoryId,
-                                   @Param("minPrice") BigDecimal minPrice,
-                                   @Param("maxPrice") BigDecimal maxPrice,
-                                   @Param("available") Boolean available,
-                                   @Param("searchTerm") String searchTerm,
-                                   Pageable pageable);
-
-    /**
      * Update product prices in bulk
      */
     @Query("UPDATE Product p SET p.markupPercentage = :markupPercentage WHERE p.id IN :productIds")
@@ -142,12 +111,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     int updateStatusForProducts(@Param("productIds") List<Long> productIds,
                                 @Param("status") ProductStatus status);
 
-    /**
-     * Find duplicate products (same name, similar price)
-     */
-    @Query("SELECT p FROM Product p WHERE EXISTS (" +
-            "SELECT p2 FROM Product p2 WHERE p2.id != p.id AND " +
-            "LOWER(p2.name) = LOWER(p.name) AND " +
-            "ABS(p2.sellingPrice - p.sellingPrice) <= :priceTolerance)")
-    List<Product> findDuplicateProducts(@Param("priceTolerance") BigDecimal priceTolerance);
 }

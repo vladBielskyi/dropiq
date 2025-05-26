@@ -77,17 +77,15 @@ public class EasyDropHandler extends PlatformHandler {
 
             log.info("Found {} items in XML from URL: {}", itemNodes.getLength(), sourceUrl);
 
-            // Групуємо товари за group_id для створення варіантів
-            Map<String, List<Element>> groupedItems = groupItemsByGroupId(itemNodes);
-
-            for (Map.Entry<String, List<Element>> entry : groupedItems.entrySet()) {
+            for (int i = 0; i < itemNodes.getLength(); i++) {
                 try {
-                    UnifiedProduct product = parseProductGroup(entry.getValue(), sourceUrl, categoryMap);
+                    Element element = (Element) itemNodes.item(i);
+                    UnifiedProduct product = parseBaseProduct(element, sourceUrl, categoryMap);
                     if (product != null) {
                         products.add(product);
                     }
                 } catch (Exception e) {
-                    log.warn("Error parsing product group {}: {}", entry.getKey(), e.getMessage());
+                    log.warn("Error parsing product at index {}: {}", i, e.getMessage());
                 }
             }
 
@@ -123,76 +121,20 @@ public class EasyDropHandler extends PlatformHandler {
     }
 
     /**
-     * Парсить групу товарів (основний товар + варіанти)
-     */
-    private UnifiedProduct parseProductGroup(List<Element> elements, String sourceUrl, Map<String, String> categories) {
-        if (elements == null || elements.isEmpty()) {
-            return null;
-        }
-
-        try {
-            // Використовуємо перший елемент як основу для товару
-            Element mainElement = elements.get(0);
-            UnifiedProduct product = parseBaseProduct(mainElement, sourceUrl, categories);
-
-            if (product == null) {
-                return null;
-            }
-
-            // Якщо є кілька елементів, створюємо варіанти
-            if (elements.size() > 1) {
-                for (Element element : elements) {
-                    try {
-                        UnifiedProduct.ProductVariant variant = parseProductVariant(element, categories);
-                        if (variant != null) {
-                            product.addVariant(variant);
-                        }
-                    } catch (Exception e) {
-                        log.debug("Error parsing variant: {}", e.getMessage());
-                    }
-                }
-            }
-
-            return product;
-        } catch (Exception e) {
-            log.error("Error parsing product group: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
      * Парсить базовий товар
      */
     private UnifiedProduct parseBaseProduct(Element element, String sourceUrl, Map<String, String> categories) {
         try {
             UnifiedProduct product = new UnifiedProduct();
 
-            // Встановлюємо значення за замовчуванням
             initializeProductDefaults(product, sourceUrl);
-
-            // Основні атрибути
             parseBasicAttributes(product, element);
-
-            // Категорія
             parseCategory(product, element, categories);
-
-            // Опис товару
             parseDescription(product, element);
-
-            // Ціна та наявність
             parsePriceAndAvailability(product, element);
-
-            // Зображення
             parseImages(product, element);
-
-            // Атрибути (включаючи розмір)
             parseAttributes(product, element);
-
-            // Платформо-специфічні дані
             parsePlatformSpecificData(product, element);
-
-            // Додаткова інформація для SEO та аналітики
-            parseAdditionalInfo(product, element);
 
             return product;
         } catch (Exception e) {
@@ -216,8 +158,6 @@ public class EasyDropHandler extends PlatformHandler {
         product.setImageUrls(new ArrayList<>());
         product.setAttributes(new HashMap<>());
         product.setPlatformSpecificData(new HashMap<>());
-        product.setVariants(new ArrayList<>());
-        product.setTags(new ArrayList<>());
         product.setLastUpdated(LocalDateTime.now());
     }
 
@@ -277,11 +217,11 @@ public class EasyDropHandler extends PlatformHandler {
         try {
             String categoryId = getElementTextContent(element, "categoryId");
             if (categoryId != null && !categoryId.isEmpty()) {
-                product.setExternalCategoryId(categoryId);
+                product.setCategoryId(categoryId);
 
                 String categoryName = categories.get(categoryId);
                 if (categoryName != null && !categoryName.isEmpty()) {
-                    product.setExternalCategoryName(categoryName);
+                    product.setCategoryName(categoryName);
                 }
             }
         } catch (Exception e) {
@@ -354,9 +294,6 @@ public class EasyDropHandler extends PlatformHandler {
                     // Обрізаємо якщо занадто довгий
                     if (countryPart.length() > 50) {
                         countryPart = countryPart.substring(0, 47) + "...";
-                    }
-                    if (!countryPart.isEmpty()) {
-                        product.setCountry(countryPart);
                     }
                 }
             }
@@ -441,12 +378,11 @@ public class EasyDropHandler extends PlatformHandler {
                             String value = paramElement.getTextContent();
 
                             if (attrName != null && !attrName.isEmpty()) {
-                                product.addAttribute(attrName, value != null ? value : "");
 
                                 // Обробляємо розмір окремо
                                 if ("розмір".equalsIgnoreCase(attrName) || "размер".equalsIgnoreCase(attrName)) {
                                     UnifiedProduct.ProductSize size = sizeNormalizerService.normalizeSize(
-                                            value, product.getName(), product.getExternalCategoryName());
+                                            value, product.getName(), product.getCategoryName());
 
                                     if (attrUnit != null && !attrUnit.isEmpty()) {
                                         size.setUnit(attrUnit);
@@ -483,144 +419,6 @@ public class EasyDropHandler extends PlatformHandler {
 
         } catch (Exception e) {
             log.debug("Error parsing platform specific data: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Парсить додаткову інформацію
-     */
-    private void parseAdditionalInfo(UnifiedProduct product, Element element) {
-        try {
-            // Генеруємо SEO заголовок
-            if (product.getName() != null) {
-                String seoTitle = product.getName();
-                if (product.getBrand() != null) {
-                    seoTitle = product.getBrand() + " " + seoTitle;
-                }
-                if (product.getSize() != null && product.getSize().getNormalizedValue() != null) {
-                    seoTitle += " розмір " + product.getSize().getNormalizedValue();
-                }
-                product.setSeoTitle(seoTitle);
-            }
-
-            // Генеруємо теги
-            generateTags(product);
-
-        } catch (Exception e) {
-            log.debug("Error parsing additional info: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Генерує теги для товару
-     */
-    private void generateTags(UnifiedProduct product) {
-        try {
-            if (product.getBrand() != null) {
-                product.getTags().add(product.getBrand().toLowerCase());
-            }
-
-            if (product.getColor() != null) {
-                product.getTags().add(product.getColor().toLowerCase());
-            }
-
-            if (product.getExternalCategoryName() != null) {
-                product.getTags().add(product.getExternalCategoryName().toLowerCase());
-            }
-
-            if (product.getSize() != null && product.getSize().getType() != null) {
-                product.getTags().add(product.getSize().getType().name().toLowerCase());
-            }
-
-        } catch (Exception e) {
-            log.debug("Error generating tags: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Парсить варіант товару
-     */
-    private UnifiedProduct.ProductVariant parseProductVariant(Element element, Map<String, String> categories) {
-        try {
-            UnifiedProduct.ProductVariant variant = new UnifiedProduct.ProductVariant();
-
-            // ID варіанту
-            String id = element.getAttribute("id");
-            if (id != null && !id.isEmpty()) {
-                variant.setId(id);
-            }
-
-            // Назва (зазвичай така ж як у основного товару)
-            String name = getElementTextContent(element, "name");
-            if (name != null && !name.isEmpty()) {
-                variant.setName(name.trim());
-            }
-
-            // Ціна
-            String priceStr = getElementTextContent(element, "priceuah");
-            if (priceStr != null && !priceStr.isEmpty()) {
-                try {
-                    variant.setPrice(Double.parseDouble(priceStr.trim()));
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid variant price format: {}", priceStr);
-                }
-            }
-
-            // Кількість
-            String quantityStr = getElementTextContent(element, "quantity_in_stock");
-            if (quantityStr != null && !quantityStr.isEmpty()) {
-                try {
-                    variant.setStock(Integer.parseInt(quantityStr.trim()));
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid variant stock format: {}", quantityStr);
-                }
-            }
-
-            // Доступність
-            String availableStr = element.getAttribute("available");
-            variant.setAvailable("true".equals(availableStr) && (variant.getStock() == null || variant.getStock() > 0));
-
-            // Штрих-код
-            String barcode = getElementTextContent(element, "barcode");
-            if (barcode != null && !barcode.isEmpty()) {
-                variant.setBarcode(barcode);
-            }
-
-            // Зображення
-            List<String> variantImages = getAllImageUrls(element, "image", "picture", "gallery", "photos", "img");
-            variant.getImageUrls().addAll(variantImages);
-
-            // Атрибути варіанту (особливо розмір)
-            NodeList paramNodes = element.getElementsByTagName("param");
-            if (paramNodes != null) {
-                for (int i = 0; i < paramNodes.getLength(); i++) {
-                    try {
-                        Element paramElement = (Element) paramNodes.item(i);
-                        if (paramElement != null) {
-                            String attrName = paramElement.getAttribute("name");
-                            String value = paramElement.getTextContent();
-
-                            if (attrName != null && !attrName.isEmpty()) {
-                                variant.getAttributes().put(attrName, value != null ? value : "");
-
-                                // Обробляємо розмір варіанту
-                                if ("розмір".equalsIgnoreCase(attrName) || "размер".equalsIgnoreCase(attrName)) {
-                                    UnifiedProduct.ProductSize size = sizeNormalizerService.normalizeSize(
-                                            value, variant.getName(), null);
-                                    variant.setSize(size);
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.debug("Error parsing variant attribute at index {}: {}", i, e.getMessage());
-                    }
-                }
-            }
-
-            return variant;
-        } catch (Exception e) {
-            log.error("Error creating product variant: {}", e.getMessage());
-            return null;
         }
     }
 

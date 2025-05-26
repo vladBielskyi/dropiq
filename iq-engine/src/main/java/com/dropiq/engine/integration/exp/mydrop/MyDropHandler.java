@@ -97,103 +97,20 @@ public class MyDropHandler extends PlatformHandler {
     }
 
     /**
-     * Групуємо товари за group_id
-     */
-    private Map<String, List<Element>> groupOffersByGroupId(NodeList offerNodes) {
-        Map<String, List<Element>> grouped = new HashMap<>();
-
-        for (int i = 0; i < offerNodes.getLength(); i++) {
-            try {
-                Element element = (Element) offerNodes.item(i);
-                String groupId = element.getAttribute("group_id");
-
-                if (groupId == null || groupId.isEmpty()) {
-                    groupId = element.getAttribute("id"); // Використовуємо ID як group_id
-                }
-
-                grouped.computeIfAbsent(groupId, k -> new ArrayList<>()).add(element);
-            } catch (Exception e) {
-                log.debug("Error processing offer at index {}: {}", i, e.getMessage());
-            }
-        }
-
-        return grouped;
-    }
-
-    /**
-     * Парсить групу товарів (основний товар + варіанти)
-     */
-    private UnifiedProduct parseProductGroup(List<Element> elements, String sourceUrl, Map<String, String> categories) {
-        if (elements == null || elements.isEmpty()) {
-            return null;
-        }
-
-        try {
-            // Використовуємо перший елемент як основу для товару
-            Element mainElement = elements.getFirst();
-            UnifiedProduct product = parseBaseProduct(mainElement, sourceUrl, categories);
-
-            if (product == null) {
-                return null;
-            }
-
-            // Якщо є кілька елементів, створюємо варіанти
-            if (elements.size() > 1) {
-                for (Element element : elements) {
-                    try {
-                        UnifiedProduct.ProductVariant variant = parseProductVariant(element, categories);
-                        if (variant != null) {
-                            product.addVariant(variant);
-                        }
-                    } catch (Exception e) {
-                        log.debug("Error parsing variant: {}", e.getMessage());
-                    }
-                }
-            }
-
-            return product;
-        } catch (Exception e) {
-            log.error("Error parsing product group: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
      * Парсить базовий товар
      */
     private UnifiedProduct parseBaseProduct(Element element, String sourceUrl, Map<String, String> categories) {
         try {
             UnifiedProduct product = new UnifiedProduct();
 
-            // Встановлюємо значення за замовчуванням
             initializeProductDefaults(product, sourceUrl);
-
-            // Основні атрибути
             parseBasicAttributes(product, element);
-
-            // Категорія
             parseCategory(product, element, categories);
-
-            // Опис товару
             parseDescription(product, element);
-
-            // Ціна та наявність
             parsePriceAndAvailability(product, element);
-
-            // Зображення
             parseImages(product, element);
-
-            // Атрибути (включаючи розмір)
             parseAttributes(product, element);
-
-            // Платформо-специфічні дані
             parsePlatformSpecificData(product, element);
-
-            // Фізичні розміри товару
-            parsePhysicalDimensions(product, element);
-
-            // Додаткова інформація для SEO та аналітики
-            parseAdditionalInfo(product, element);
 
             return product;
         } catch (Exception e) {
@@ -217,8 +134,6 @@ public class MyDropHandler extends PlatformHandler {
         product.setImageUrls(new ArrayList<>());
         product.setAttributes(new HashMap<>());
         product.setPlatformSpecificData(new HashMap<>());
-        product.setVariants(new ArrayList<>());
-        product.setTags(new ArrayList<>());
         product.setLastUpdated(LocalDateTime.now());
     }
 
@@ -279,7 +194,7 @@ public class MyDropHandler extends PlatformHandler {
         String[] words = text.split(" ");
         StringBuilder sb = new StringBuilder();
         for (String word : words) {
-            if (sb.length() > 0) sb.append(" ");
+            if (!sb.isEmpty()) sb.append(" ");
             sb.append(word.substring(0, 1).toUpperCase()).append(word.substring(1).toLowerCase());
         }
         return sb.toString();
@@ -292,11 +207,11 @@ public class MyDropHandler extends PlatformHandler {
         try {
             String categoryId = getElementTextContent(element, "categoryId");
             if (categoryId != null && !categoryId.isEmpty()) {
-                product.setExternalCategoryId(categoryId);
+                product.setCategoryId(categoryId);
 
                 String categoryName = categories.get(categoryId);
                 if (categoryName != null && !categoryName.isEmpty()) {
-                    product.setExternalCategoryName(categoryName);
+                    product.setCategoryName(categoryName);
                 }
             }
         } catch (Exception e) {
@@ -304,9 +219,6 @@ public class MyDropHandler extends PlatformHandler {
         }
     }
 
-    /**
-     * Парсить опис товару
-     */
     private void parseDescription(UnifiedProduct product, Element element) {
         try {
             // Спробуємо отримати CDATA контент спочатку
@@ -319,18 +231,12 @@ public class MyDropHandler extends PlatformHandler {
                 // Очищаємо HTML теги та форматуємо опис
                 String cleanDescription = cleanHtmlDescription(description);
                 product.setDescription(cleanDescription);
-
-                // Витягуємо додаткову інформацію з опису
-                extractInfoFromDescription(product, cleanDescription);
             }
         } catch (Exception e) {
             log.debug("Error parsing description: {}", e.getMessage());
         }
     }
 
-    /**
-     * Очищає HTML теги з опису
-     */
     private String cleanHtmlDescription(String description) {
         if (description == null) return "";
 
@@ -346,117 +252,9 @@ public class MyDropHandler extends PlatformHandler {
                 .trim();
     }
 
-    /**
-     * Витягує додаткову інформацію з опису
-     */
-    private void extractInfoFromDescription(UnifiedProduct product, String description) {
-        try {
-            String descLower = description.toLowerCase();
 
-            // Витягуємо матеріал/склад
-            extractMaterial(product, description, descLower);
-
-            // Витягуємо країну виробника
-            extractCountry(product, description, descLower);
-
-            // Витягуємо колір
-            extractColor(product, description, descLower);
-
-            // Витягуємо розміри та характеристики
-            extractSizeInfo(product, description, descLower);
-
-        } catch (Exception e) {
-            log.debug("Error extracting info from description: {}", e.getMessage());
-        }
-    }
-
-    private void extractMaterial(UnifiedProduct product, String description, String descLower) {
-        String[] materialPatterns = {"склад:", "состав:", "матеріал:", "материал:"};
-        for (String pattern : materialPatterns) {
-            if (descLower.contains(pattern)) {
-                String[] parts = description.split("(?i)" + pattern);
-                if (parts.length > 1) {
-                    String materialPart = parts[1].split("[\\n\\r•]")[0].trim();
-                    if (!materialPart.isEmpty()) {
-                        product.setMaterial(materialPart);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    private void extractCountry(UnifiedProduct product, String description, String descLower) {
-        String[] countryPatterns = {"виробник:", "производитель:", "країна:"};
-        for (String pattern : countryPatterns) {
-            if (descLower.contains(pattern)) {
-                String[] parts = description.split("(?i)" + pattern);
-                if (parts.length > 1) {
-                    String countryPart = parts[1].split("[\\n\\r•]")[0].trim();
-                    if (!countryPart.isEmpty()) {
-                        product.setCountry(countryPart);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    private void extractColor(UnifiedProduct product, String description, String descLower) {
-        // Український/російський кольори
-        Map<String, String> colorMap = new HashMap<>();
-        colorMap.put("чорний", "black");
-        colorMap.put("черный", "black");
-        colorMap.put("білий", "white");
-        colorMap.put("белый", "white");
-        colorMap.put("червоний", "red");
-        colorMap.put("красный", "red");
-        colorMap.put("синій", "blue");
-        colorMap.put("синий", "blue");
-        colorMap.put("зелений", "green");
-        colorMap.put("зеленый", "green");
-        colorMap.put("сірий", "gray");
-        colorMap.put("серый", "gray");
-
-        for (Map.Entry<String, String> entry : colorMap.entrySet()) {
-            if (descLower.contains(entry.getKey())) {
-                product.setColor(entry.getValue());
-                break;
-            }
-        }
-
-        // Англійські кольори
-        String[] englishColors = {"black", "white", "red", "blue", "green", "yellow", "gray", "brown", "pink", "purple"};
-        for (String color : englishColors) {
-            if (descLower.contains(color)) {
-                product.setColor(color);
-                break;
-            }
-        }
-    }
-
-    private void extractSizeInfo(UnifiedProduct product, String description, String descLower) {
-        // Шукаємо розмірні характеристики, але зберігаємо тільки коротку інформацію
-        if (descLower.contains("розмір") || descLower.contains("размер")) {
-            // Витягуємо тільки першу строку з розмірною інформацією
-            String[] lines = description.split("[\\n\\r]");
-            for (String line : lines) {
-                String trimmedLine = line.trim();
-                if ((trimmedLine.toLowerCase().contains("розмір") || trimmedLine.toLowerCase().contains("размер"))
-                        && trimmedLine.length() <= 100) { // Тільки короткі рядки
-                    product.addAttribute("size_info", trimmedLine);
-                    break;
-                }
-            }
-        }
-    }
-
-    /**
-     * Парсить ціну та наявність
-     */
     private void parsePriceAndAvailability(UnifiedProduct product, Element element) {
         try {
-            // Ціна
             String priceStr = getElementTextContent(element, "price");
             if (priceStr != null && !priceStr.isEmpty()) {
                 try {
@@ -465,8 +263,6 @@ public class MyDropHandler extends PlatformHandler {
                     log.debug("Invalid price format: {}", priceStr);
                 }
             }
-
-            // Кількість на складі
             String quantityStr = getElementTextContent(element, "quantity_in_stock");
             if (quantityStr != null && !quantityStr.isEmpty()) {
                 try {
@@ -475,8 +271,6 @@ public class MyDropHandler extends PlatformHandler {
                     log.debug("Invalid stock quantity format: {}", quantityStr);
                 }
             }
-
-            // Доступність
             String availableStr = element.getAttribute("available");
             product.setAvailable("true".equals(availableStr) && product.getStock() > 0);
 
@@ -485,9 +279,6 @@ public class MyDropHandler extends PlatformHandler {
         }
     }
 
-    /**
-     * Парсить зображення
-     */
     private void parseImages(UnifiedProduct product, Element element) {
         try {
             List<String> imageUrls = getAllImageUrls(element, "picture", "image", "gallery", "photos");
@@ -501,9 +292,6 @@ public class MyDropHandler extends PlatformHandler {
         }
     }
 
-    /**
-     * Парсить атрибути товару включаючи розмір
-     */
     private void parseAttributes(UnifiedProduct product, Element element) {
         try {
             NodeList paramNodes = element.getElementsByTagName("param");
@@ -517,12 +305,9 @@ public class MyDropHandler extends PlatformHandler {
                             String value = paramElement.getTextContent();
 
                             if (attrName != null && !attrName.isEmpty()) {
-                                product.addAttribute(attrName, value != null ? value : "");
-
-                                // Обробляємо розмір окремо
                                 if ("размер".equalsIgnoreCase(attrName) || "розмір".equalsIgnoreCase(attrName)) {
                                     UnifiedProduct.ProductSize size = sizeNormalizerService.normalizeSize(
-                                            value, product.getName(), product.getExternalCategoryName());
+                                            value, product.getName(), product.getCategoryName());
 
                                     if (attrUnit != null && !attrUnit.isEmpty()) {
                                         size.setUnit(attrUnit);
@@ -542,9 +327,6 @@ public class MyDropHandler extends PlatformHandler {
         }
     }
 
-    /**
-     * Парсить платформо-специфічні дані
-     */
     private void parsePlatformSpecificData(UnifiedProduct product, Element element) {
         try {
             String vendorCode = getElementTextContent(element, "vendorCode");
@@ -573,249 +355,6 @@ public class MyDropHandler extends PlatformHandler {
 
         } catch (Exception e) {
             log.debug("Error parsing platform specific data: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Парсить фізичні розміри товару
-     */
-    private void parsePhysicalDimensions(UnifiedProduct product, Element element) {
-        try {
-            UnifiedProduct.PhysicalDimensions dimensions = new UnifiedProduct.PhysicalDimensions();
-            boolean hasDimensions = false;
-
-            String lengthStr = getElementTextContent(element, "length");
-            if (lengthStr != null && !lengthStr.isEmpty()) {
-                try {
-                    dimensions.setLength(Double.parseDouble(lengthStr));
-                    hasDimensions = true;
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid length format: {}", lengthStr);
-                }
-            }
-
-            String widthStr = getElementTextContent(element, "width");
-            if (widthStr != null && !widthStr.isEmpty()) {
-                try {
-                    dimensions.setWidth(Double.parseDouble(widthStr));
-                    hasDimensions = true;
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid width format: {}", widthStr);
-                }
-            }
-
-            String heightStr = getElementTextContent(element, "height");
-            if (heightStr != null && !heightStr.isEmpty()) {
-                try {
-                    dimensions.setHeight(Double.parseDouble(heightStr));
-                    hasDimensions = true;
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid height format: {}", heightStr);
-                }
-            }
-
-            String weightStr = getElementTextContent(element, "weight");
-            if (weightStr != null && !weightStr.isEmpty()) {
-                try {
-                    product.setWeight(Double.parseDouble(weightStr));
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid weight format: {}", weightStr);
-                }
-            }
-
-            if (hasDimensions) {
-                product.setDimensions(dimensions);
-            }
-
-        } catch (Exception e) {
-            log.debug("Error parsing physical dimensions: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Парсить додаткову інформацію
-     */
-    private void parseAdditionalInfo(UnifiedProduct product, Element element) {
-        try {
-            // Генеруємо SEO заголовок
-            generateSeoTitle(product);
-
-            // Генеруємо SEO опис
-            generateSeoDescription(product);
-
-            // Генеруємо теги
-            generateTags(product);
-
-        } catch (Exception e) {
-            log.debug("Error parsing additional info: {}", e.getMessage());
-        }
-    }
-
-    private void generateSeoTitle(UnifiedProduct product) {
-        StringBuilder seoTitle = new StringBuilder();
-
-        if (product.getBrand() != null) {
-            seoTitle.append(product.getBrand()).append(" ");
-        }
-
-        if (product.getName() != null) {
-            seoTitle.append(product.getName());
-        }
-
-        if (product.getSize() != null && product.getSize().getNormalizedValue() != null
-                && !"ONE_SIZE".equals(product.getSize().getNormalizedValue())) {
-            seoTitle.append(" розмір ").append(product.getSize().getNormalizedValue());
-        }
-
-        if (product.getColor() != null) {
-            seoTitle.append(" ").append(product.getColor());
-        }
-
-        product.setSeoTitle(seoTitle.toString().trim());
-    }
-
-    private void generateSeoDescription(UnifiedProduct product) {
-        StringBuilder seoDesc = new StringBuilder();
-
-        if (product.getName() != null) {
-            seoDesc.append(product.getName());
-        }
-
-        if (product.getBrand() != null) {
-            seoDesc.append(" від ").append(product.getBrand());
-        }
-
-        if (product.getPrice() != null && product.getPrice() > 0) {
-            seoDesc.append(". Ціна: ").append(product.getFormattedPrice()).append(" грн");
-        }
-
-        if (product.getExternalCategoryName() != null) {
-            seoDesc.append(". Категорія: ").append(product.getExternalCategoryName());
-        }
-
-        seoDesc.append(". Швидка доставка по Україні.");
-
-        product.setSeoDescription(seoDesc.toString());
-    }
-
-    /**
-     * Генерує теги для товару
-     */
-    private void generateTags(UnifiedProduct product) {
-        try {
-            if (product.getBrand() != null) {
-                product.getTags().add(product.getBrand().toLowerCase());
-            }
-
-            if (product.getColor() != null) {
-                product.getTags().add(product.getColor().toLowerCase());
-            }
-
-            if (product.getExternalCategoryName() != null) {
-                product.getTags().add(product.getExternalCategoryName().toLowerCase());
-            }
-
-            if (product.getSize() != null && product.getSize().getType() != null) {
-                product.getTags().add(product.getSize().getType().name().toLowerCase());
-            }
-
-            if (product.getMaterial() != null) {
-                product.getTags().add("material_" + product.getMaterial().toLowerCase().replaceAll("\\s+", "_"));
-            }
-
-            if (product.getCountry() != null) {
-                product.getTags().add("country_" + product.getCountry().toLowerCase().replaceAll("\\s+", "_"));
-            }
-
-        } catch (Exception e) {
-            log.debug("Error generating tags: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Парсить варіант товару
-     */
-    private UnifiedProduct.ProductVariant parseProductVariant(Element element, Map<String, String> categories) {
-        try {
-            UnifiedProduct.ProductVariant variant = new UnifiedProduct.ProductVariant();
-
-            // ID варіанту
-            String id = element.getAttribute("id");
-            if (id != null && !id.isEmpty()) {
-                variant.setId(id);
-            }
-
-            // Назва (зазвичай така ж як у основного товару)
-            String name = getElementTextContent(element, "name");
-            if (name != null && !name.isEmpty()) {
-                variant.setName(name.trim());
-            }
-
-            // Ціна
-            String priceStr = getElementTextContent(element, "price");
-            if (priceStr != null && !priceStr.isEmpty()) {
-                try {
-                    variant.setPrice(Double.parseDouble(priceStr.trim()));
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid variant price format: {}", priceStr);
-                }
-            }
-
-            // Кількість
-            String quantityStr = getElementTextContent(element, "quantity_in_stock");
-            if (quantityStr != null && !quantityStr.isEmpty()) {
-                try {
-                    variant.setStock(Integer.parseInt(quantityStr.trim()));
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid variant stock format: {}", quantityStr);
-                }
-            }
-
-            // Доступність
-            String availableStr = element.getAttribute("available");
-            variant.setAvailable("true".equals(availableStr) && (variant.getStock() == null || variant.getStock() > 0));
-
-            // Vendor Code як барcode
-            String vendorCode = getElementTextContent(element, "vendorCode");
-            if (vendorCode != null && !vendorCode.isEmpty()) {
-                variant.setBarcode(vendorCode);
-            }
-
-            // Зображення
-            List<String> variantImages = getAllImageUrls(element, "picture", "image", "gallery", "photos");
-            variant.getImageUrls().addAll(variantImages);
-
-            // Атрибути варіанту (особливо розмір)
-            NodeList paramNodes = element.getElementsByTagName("param");
-            if (paramNodes != null) {
-                for (int i = 0; i < paramNodes.getLength(); i++) {
-                    try {
-                        Element paramElement = (Element) paramNodes.item(i);
-                        if (paramElement != null) {
-                            String attrName = paramElement.getAttribute("name");
-                            String value = paramElement.getTextContent();
-
-                            if (attrName != null && !attrName.isEmpty()) {
-                                variant.getAttributes().put(attrName, value != null ? value : "");
-
-                                // Обробляємо розмір варіанту
-                                if ("размер".equalsIgnoreCase(attrName) || "розмір".equalsIgnoreCase(attrName)) {
-                                    UnifiedProduct.ProductSize size = sizeNormalizerService.normalizeSize(
-                                            value, variant.getName(), null);
-                                    variant.setSize(size);
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.debug("Error parsing variant attribute at index {}: {}", i, e.getMessage());
-                    }
-                }
-            }
-
-            return variant;
-        } catch (Exception e) {
-            log.error("Error creating product variant: {}", e.getMessage());
-            return null;
         }
     }
 

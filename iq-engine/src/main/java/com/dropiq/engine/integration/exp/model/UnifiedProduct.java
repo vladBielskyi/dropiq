@@ -12,57 +12,37 @@ import java.util.Map;
 @Data
 public class UnifiedProduct {
 
-    // Базові поля
     private String externalId;
-    private String groupId; // Для групування варіантів товару
+    private String groupId;
     private String name;
     private String description;
     private Double price;
     private Integer stock;
     private Boolean available;
 
-    // Категорізація
-    private String externalCategoryId;
-    private String externalCategoryName;
+    private String categoryId;
+    private String categoryName;
 
-    // Розміри та варіанти
     private ProductSize size;
-    private List<ProductVariant> variants = new ArrayList<>();
-
-    // Зображення
     private List<String> imageUrls = new ArrayList<>();
-
-    // Атрибути
     private Map<String, String> attributes = new HashMap<>();
-
-    // Платформо-специфічні дані
     private Map<String, String> platformSpecificData = new HashMap<>();
 
-    // Мета-дані
     private SourceType sourceType;
     private String sourceUrl;
     private LocalDateTime lastUpdated;
 
-    // Додаткові поля для SEO та AI
-    private String seoTitle;
-    private String seoDescription;
-    private List<String> tags = new ArrayList<>();
     private String brand;
     private String model;
     private String color;
     private String material;
-    private String country;
-
-    // Розмірна сітка та фізичні характеристики
-    private PhysicalDimensions dimensions;
-    private Double weight;
 
     @Data
     public static class ProductSize {
-        private String originalValue; // Оригінальне значення з XML
-        private SizeType type; // Тип розміру
-        private String normalizedValue; // Нормалізоване значення
-        private String unit; // Одиниця виміру
+        private String originalValue;
+        private SizeType type;
+        private String normalizedValue;
+        private String unit;
         private Map<String, String> additionalSizes = new HashMap<>(); // Додаткові розміри
 
         @Getter
@@ -83,64 +63,5 @@ public class UnifiedProduct {
             }
 
         }
-    }
-
-    @Data
-    public static class ProductVariant {
-        private String id;
-        private String name;
-        private ProductSize size;
-        private String color;
-        private Double price;
-        private Integer stock;
-        private Boolean available;
-        private String barcode;
-        private List<String> imageUrls = new ArrayList<>();
-        private Map<String, String> attributes = new HashMap<>();
-    }
-
-    @Data
-    public static class PhysicalDimensions {
-        private Double length;
-        private Double width;
-        private Double height;
-        private String unit = "cm";
-    }
-
-    // Утилітні методи
-    public boolean hasVariants() {
-        return variants != null && !variants.isEmpty();
-    }
-
-    public void addVariant(ProductVariant variant) {
-        if (this.variants == null) {
-            this.variants = new ArrayList<>();
-        }
-        this.variants.add(variant);
-    }
-
-    public void addImageUrl(String url) {
-        if (url != null && !url.trim().isEmpty() && !this.imageUrls.contains(url)) {
-            this.imageUrls.add(url);
-        }
-    }
-
-    public void addAttribute(String key, String value) {
-        if (key != null && !key.trim().isEmpty()) {
-            this.attributes.put(key, value != null ? value : "");
-        }
-    }
-
-    public String getPrimaryImageUrl() {
-        return imageUrls.isEmpty() ? null : imageUrls.get(0);
-    }
-
-    public boolean isInStock() {
-        return stock != null && stock > 0;
-    }
-
-    public String getFormattedPrice() {
-        if (price == null) return "0";
-        return String.format("%.2f", price);
     }
 }

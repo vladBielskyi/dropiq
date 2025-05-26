@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 public class HoroshopBatchImportRequest {
+    private String token;
     private List<HoroshopProduct> products = new ArrayList<>();
     private HoroshopImportSettings settings = new HoroshopImportSettings();
 }

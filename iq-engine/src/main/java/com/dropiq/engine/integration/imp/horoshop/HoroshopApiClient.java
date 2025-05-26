@@ -46,14 +46,14 @@ public class HoroshopApiClient {
         try {
             log.info("Authenticating with Horoshop API: {}", config.getDomain());
 
-            MultiValueMap<String, String> authData = new LinkedMultiValueMap<>();
-            authData.add("username", config.getUsername());
-            authData.add("password", config.getPassword());
+            Map<String, String> authData = new HashMap<>();
+            authData.put("login", config.getUsername());
+            authData.put("password", config.getPassword());
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(authData, headers);
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(authData, headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
                     config.getApiUrl() + AUTH_ENDPOINT,
@@ -64,7 +64,7 @@ public class HoroshopApiClient {
 
             if (response.getStatusCode() == HttpStatus.OK) {
                 Map<String, Object> authResponse = objectMapper.readValue(response.getBody(), Map.class);
-                String token = (String) authResponse.get("token");
+                String token = ((LinkedHashMap) authResponse.get("response")).get("token").toString();;
                 log.info("Successfully authenticated with Horoshop");
                 return token;
             } else {
@@ -136,8 +136,8 @@ public class HoroshopApiClient {
         try {
             HoroshopBatchImportRequest request = new HoroshopBatchImportRequest();
             request.setProducts(products);
-
-            HttpHeaders headers = createAuthHeaders(config);
+            request.setToken(config.getToken());
+            HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<HoroshopBatchImportRequest> entity = new HttpEntity<>(request, headers);

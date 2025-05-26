@@ -3,19 +3,15 @@ package com.dropiq.engine.product.service;
 import com.dropiq.engine.integration.ai.OllamaClient;
 import com.dropiq.engine.integration.ai.model.ProductAnalysisResult;
 import com.dropiq.engine.product.entity.DataSet;
-import com.dropiq.engine.product.entity.DatasetCategory;
 import com.dropiq.engine.product.entity.Product;
 import com.dropiq.engine.product.repository.DataSetRepository;
 import com.dropiq.engine.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -51,7 +47,7 @@ public class AIProductAnalysisService {
                     .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
 
             log.info("Starting AI analysis for product: {} (ID: {}, Group: {})",
-                    product.getName(), productId, product.getGroupId());
+                    product.getExternalName(), productId, product.getExternalGroupId());
 
             // Check cache first
             String cacheKey = generateCacheKey(product);
@@ -83,7 +79,7 @@ public class AIProductAnalysisService {
             // Share analysis with group
             shareAnalysisWithGroup(product, analysis);
 
-            log.info("AI analysis completed for product: {} (ID: {})", product.getName(), productId);
+            log.info("AI analysis completed for product: {} (ID: {})", product.getExternalName(), productId);
             return CompletableFuture.completedFuture(product);
 
         } catch (Exception e) {
@@ -105,7 +101,7 @@ public class AIProductAnalysisService {
                     dataset.getName(), dataset.getTotalProducts());
 
             List<Product> productsToAnalyze = dataset.getProducts().stream()
-                    .filter(p -> !p.getAiAnalyzed())
+                    .filter(p -> p.getAiAnalysisDate() != null)
                     .toList();
 
             int totalAnalyzed = 0;
@@ -113,7 +109,7 @@ public class AIProductAnalysisService {
             // Group products by their group ID for efficient analysis
             Map<String, List<Product>> productGroups = productsToAnalyze.stream()
                     .collect(Collectors.groupingBy(p ->
-                            p.getGroupId() != null ? p.getGroupId() : "single_" + p.getId()));
+                            p.getExternalGroupId() != null ? p.getExternalGroupId() : "single_" + p.getId()));
 
             for (Map.Entry<String, List<Product>> entry : productGroups.entrySet()) {
                 List<Product> groupProducts = entry.getValue();
@@ -146,14 +142,14 @@ public class AIProductAnalysisService {
      * Perform complete product analysis
      */
     private ProductAnalysisResult performProductAnalysis(Product product) {
-        log.info("Performing complete AI analysis for product: {}", product.getName());
+        log.info("Performing complete AI analysis for product: {}", product.getExternalName());
 
         // Step 1: Analyze product image
         ProductAnalysisResult visionResult = null;
         if (!product.getImageUrls().isEmpty()) {
             visionResult = ollamaClient.analyzeProductImage(
                     product.getImageUrls().get(0),
-                    product.getName()
+                    product.getExternalName()
             );
             log.info("Vision analysis completed. Product type: {}, Model: {}, Brand: {}",
                     visionResult.getProductType(), visionResult.getModelName(), visionResult.getBrandDetected());
@@ -179,7 +175,6 @@ public class AIProductAnalysisService {
      */
     private void applyAnalysisToProduct(Product product, ProductAnalysisResult analysis) {
         // Set AI flags
-        product.setAiAnalyzed(true);
         product.setAiAnalysisDate(LocalDateTime.now());
        // product.setAiConfidenceScore(calculateConfidenceScore(analysis));
 
@@ -279,10 +274,10 @@ public class AIProductAnalysisService {
     private String buildProductInfo(Product product) {
         StringBuilder info = new StringBuilder();
 
-        info.append("Name: ").append(product.getName()).append("\n");
+        info.append("Name: ").append(product.getExternalName()).append("\n");
 
-        if (product.getOriginalDescription() != null) {
-            String cleanDesc = product.getOriginalDescription()
+        if (product.getExternalDescription() != null) {
+            String cleanDesc = product.getExternalDescription()
                     .replaceAll("<[^>]+>", "") // Remove HTML
                     .replaceAll("\\s+", " ")    // Normalize whitespace
                     .trim();
@@ -395,8 +390,8 @@ public class AIProductAnalysisService {
      * Generate cache key for product
      */
     private String generateCacheKey(Product product) {
-        if (product.getGroupId() != null && !product.getGroupId().trim().isEmpty()) {
-            return product.getSourceType() + ":" + product.getGroupId();
+        if (product.getExternalGroupId() != null && !product.getExternalGroupId().trim().isEmpty()) {
+            return product.getSourceType() + ":" + product.getExternalGroupId();
         }
         return product.getSourceType() + ":single:" + product.getExternalId();
     }
@@ -405,12 +400,12 @@ public class AIProductAnalysisService {
      * Find analyzed product in the same group
      */
     private Optional<Product> findAnalyzedProductInGroup(Product product) {
-        if (product.getGroupId() == null || product.getGroupId().trim().isEmpty()) {
+        if (product.getExternalGroupId() == null || product.getExternalGroupId().trim().isEmpty()) {
             return Optional.empty();
         }
 
-        return productRepository.findByGroupIdAndSourceTypeAndAiAnalyzedTrue(
-                product.getGroupId(),
+        return productRepository.findByExternalGroupIdAndSourceTypeAndAiAnalysisDateIsNotNull(
+                product.getExternalGroupId(),
                 product.getSourceType()
         ).stream().findFirst();
     }
@@ -419,7 +414,6 @@ public class AIProductAnalysisService {
      * Copy analysis from one product to another
      */
     private void copyAnalysisFromProduct(Product source, Product target) {
-        target.setAiAnalyzed(true);
         target.setAiAnalysisDate(LocalDateTime.now());
        // target.setAiConfidenceScore(source.getAiConfidenceScore());
         target.setCategory(source.getCategory());
@@ -464,10 +458,10 @@ public class AIProductAnalysisService {
      * Share analysis with other products in the group
      */
     private void shareAnalysisWithGroup(Product analyzedProduct, ProductAnalysisResult analysis) {
-        if (analyzedProduct.getGroupId() == null) return;
+        if (analyzedProduct.getExternalGroupId() == null) return;
 
-        List<Product> groupProducts = productRepository.findByGroupIdAndSourceTypeAndAiAnalyzedFalse(
-                analyzedProduct.getGroupId(),
+        List<Product> groupProducts = productRepository.findByExternalGroupIdAndSourceTypeAndAiAnalysisDateIsNull(
+                analyzedProduct.getExternalGroupId(),
                 analyzedProduct.getSourceType()
         );
 
@@ -479,7 +473,7 @@ public class AIProductAnalysisService {
         }
 
         log.info("Shared analysis with {} products in group: {}",
-                groupProducts.size(), analyzedProduct.getGroupId());
+                groupProducts.size(), analyzedProduct.getExternalGroupId());
     }
 
     /**

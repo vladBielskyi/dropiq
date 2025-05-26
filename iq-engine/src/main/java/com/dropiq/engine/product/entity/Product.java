@@ -7,25 +7,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Оптимізована ентіті Product спеціально для роботи з Horoshop API
- * - Мінімізовані поля для швидкості
- * - Horoshop-готові атрибути
- * - Оптимізовані індекси
- */
 @Entity
-@Table(name = "product",
-        indexes = {
-                @Index(name = "idx_product_group_source", columnList = "group_id, source_type"),
-                @Index(name = "idx_product_category", columnList = "category_id"),
-                @Index(name = "idx_product_status_available", columnList = "status, available"),
-                @Index(name = "idx_product_last_sync", columnList = "last_sync"),
-                @Index(name = "idx_product_ai_analyzed", columnList = "ai_analyzed"),
-                @Index(name = "idx_product_horoshop_ready", columnList = "horoshop_ready")
-        })
+@Table(name = "product")
 @Data
 @EqualsAndHashCode(exclude = {"datasets", "category"})
 public class Product {
@@ -34,25 +21,35 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ==============================================
-    // БАЗОВІ ПОЛЯ ДЛЯ ІДЕНТИФІКАЦІЇ
-    // ==============================================
-
     @Column(name = "external_id", nullable = false, length = 100)
     private String externalId;
 
-    @Column(name = "group_id", length = 100)
-    private String groupId; // Для варіантів товару
+    @Column(name = "external_group_id", length = 100)
+    private String externalGroupId;
 
-    @Column(name = "name", nullable = false, length = 500)
-    private String name;
+    @Column(name = "external_name", nullable = false, length = 500)
+    private String externalName;
 
-    @Column(name = "original_description", length = 4000)
-    private String originalDescription;
+    @Column(name = "external_description", length = 4000)
+    private String externalDescription;
 
-    // ==============================================
-    // ЦІНИ ТА НАЯВНІСТЬ
-    // ==============================================
+    @Column(name = "external_category_id", length = 100)
+    private String externalCategoryId;
+
+    @Column(name = "external_category_name", length = 200)
+    private String externalCategoryName;
+
+    @Column(name = "brand_detected")
+    private Boolean brandDetected = false;
+
+    @Column(name = "detected_brand_name", length = 100)
+    private String detectedBrandName;
+
+    @Column(name = "is_replica")
+    private Boolean isReplica = false;
+
+    @Column(name = "replica_indicators", length = 1000)
+    private String replicaIndicators;
 
     @Column(name = "original_price", precision = 19, scale = 2)
     private BigDecimal originalPrice;
@@ -61,7 +58,7 @@ public class Product {
     private BigDecimal sellingPrice;
 
     @Column(name = "markup_percentage", precision = 5, scale = 2)
-    private BigDecimal markupPercentage = BigDecimal.valueOf(10);
+    private BigDecimal markupPercentage = BigDecimal.valueOf(20);
 
     @Column(name = "stock")
     private Integer stock = 0;
@@ -73,22 +70,32 @@ public class Product {
     @Column(name = "status")
     private ProductStatus status = ProductStatus.DRAFT;
 
-    // ==============================================
-    // HOROSHOP ОПТИМІЗОВАНІ ПОЛЯ
-    // ==============================================
-
-    // SEO контент (готовий для Horoshop)
     @Column(name = "seo_title_ua", length = 255)
     private String seoTitleUa;
 
     @Column(name = "seo_title_ru", length = 255)
     private String seoTitleRu;
 
-    @Column(name = "description_ua", length = 2000)
+    @Column(name = "seo_title_en", length = 255)
+    private String seoTitleEn;
+
+    @Column(name = "description_ua", length = 4000)
     private String descriptionUa;
 
-    @Column(name = "description_ru", length = 2000)
+    @Column(name = "description_ru", length = 4000)
     private String descriptionRu;
+
+    @Column(name = "description_en", length = 4000)
+    private String descriptionEn;
+
+    @Column(name = "short_description_ua", length = 500)
+    private String shortDescriptionUa;
+
+    @Column(name = "short_description_ru", length = 500)
+    private String shortDescriptionRu;
+
+    @Column(name = "short_description_en", length = 500)
+    private String shortDescriptionEn;
 
     @Column(name = "meta_description_ua", length = 300)
     private String metaDescriptionUa;
@@ -96,40 +103,30 @@ public class Product {
     @Column(name = "meta_description_ru", length = 300)
     private String metaDescriptionRu;
 
-    // Основні характеристики товару (для Horoshop characteristics)
-    @Column(name = "brand", length = 100)
-    private String brand;
+    @Column(name = "meta_description_en", length = 300)
+    private String metaDescriptionEn;
 
-    @Column(name = "model", length = 100)
-    private String model;
+    @Column(name = "original_size", length = 50)
+    private String originalSize;
 
-    @Column(name = "color", length = 50)
-    private String color;
+    @Column(name = "normalized_size", length = 20)
+    private String normalizedSize;
 
-    @Column(name = "size", length = 50)
-    private String size;
+    @Column(name = "size_type", length = 20)
+    private String sizeType;
 
-    @Column(name = "material", length = 100)
-    private String material;
-
-    @Column(name = "gender", length = 20)
-    private String gender; // чоловічий/жіночий/унісекс
-
-    @Column(name = "season", length = 30)
-    private String season; // весна/літо/осінь/зима/всесезон
-
-    // ==============================================
-    // HOROSHOP СПЕЦИФІЧНІ ПОЛЯ
-    // ==============================================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private DatasetCategory category;
 
     @Column(name = "horoshop_article", length = 100)
-    private String horoshopArticle; // Може відрізнятися від external_id
+    private String horoshopArticle;
 
     @Column(name = "horoshop_category_path", length = 500)
-    private String horoshopCategoryPath; // "Одяг / Жіночий / Сукні"
+    private String horoshopCategoryPath;
 
     @Column(name = "horoshop_ready")
-    private Boolean horoshopReady = false; // Готовий до експорту
+    private Boolean horoshopReady = false;
 
     @Column(name = "horoshop_exported")
     private Boolean horoshopExported = false;
@@ -138,18 +135,16 @@ public class Product {
     private LocalDateTime horoshopLastExport;
 
     @Column(name = "horoshop_status", length = 50)
-    private String horoshopStatus; // SUCCESS, ERROR, PENDING
+    private String horoshopStatus;
 
     @Column(name = "horoshop_error_message", length = 1000)
     private String horoshopErrorMessage;
 
-    // Horoshop presence статус
     @Column(name = "presence", length = 50)
-    private String presence = "В наличии"; // "В наличии", "Нет в наличии", "Под заказ"
+    private String presence;
 
-    // ==============================================
-    // ЗОБРАЖЕННЯ (ОПТИМІЗОВАНО)
-    // ==============================================
+    @Column(name = "horoshop_characteristics")
+    private String horoshopCharacteristics;
 
     @ElementCollection
     @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
@@ -157,30 +152,11 @@ public class Product {
     @OrderColumn(name = "image_order")
     private List<String> imageUrls = new ArrayList<>();
 
-    // Головне зображення (для швидкого доступу)
     @Column(name = "main_image_url", length = 500)
     private String mainImageUrl;
 
-    // ==============================================
-    // КАТЕГОРИЗАЦІЯ
-    // ==============================================
-
-    @Column(name = "external_category_id", length = 100)
-    private String externalCategoryId;
-
-    @Column(name = "external_category_name", length = 200)
-    private String externalCategoryName;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private DatasetCategory category;
-
-    // ==============================================
-    // AI ТА SEO МЕТРИКИ
-    // ==============================================
-
-    @Column(name = "ai_analyzed")
-    private Boolean aiAnalyzed = false;
+    @Column(name = "images_quality_score", precision = 3, scale = 2)
+    private BigDecimal imagesQualityScore = BigDecimal.ZERO;
 
     @Column(name = "ai_analysis_date")
     private LocalDateTime aiAnalysisDate;
@@ -191,31 +167,55 @@ public class Product {
     @Column(name = "trend_score", precision = 5, scale = 2)
     private BigDecimal trendScore;
 
-    @Column(name = "seo_optimized")
-    private Boolean seoOptimized = false;
+    @Column(name = "conversion_potential", precision = 5, scale = 2)
+    private BigDecimal conversionPotential;
 
-    // ==============================================
-    // ТЕГИ (ОПТИМІЗОВАНО ДЛЯ ПОШУКУ)
-    // ==============================================
+    @Column(name = "seasonality_score", precision = 5, scale = 2)
+    private BigDecimal seasonalityScore;
+
+    @ElementCollection
+    @CollectionTable(name = "product_keywords_ua", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "keyword", length = 100)
+    private Set<String> keywordsUa = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "product_keywords_ru", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "keyword", length = 100)
+    private Set<String> keywordsRu = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "product_keywords_en", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "keyword", length = 100)
+    private Set<String> keywordsEn = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(name = "product_tags", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "tag", length = 50)
     private Set<String> tags = new HashSet<>();
 
-    // ==============================================
-    // ОСНОВНІ АТРИБУТИ (ЗАМІСТЬ ВЕЛИКОЇ МАПИ)
-    // ==============================================
+    @Column(name = "color", length = 50)
+    private String color;
+
+    @Column(name = "material", length = 100)
+    private String material;
+
+    @Column(name = "gender", length = 20)
+    private String gender;
+
+    @Column(name = "season", length = 30)
+    private String season;
+
+    @Column(name = "style", length = 50)
+    private String style;
+
+    @Column(name = "occasion", length = 100)
+    private String occasion;
 
     @ElementCollection
     @CollectionTable(name = "product_attributes", joinColumns = @JoinColumn(name = "product_id"))
     @MapKeyColumn(name = "attr_key", length = 100)
     @Column(name = "attr_value", length = 500)
     private Map<String, String> attributes = new HashMap<>();
-
-    // ==============================================
-    // ТЕХНІЧНІ ПОЛЯ
-    // ==============================================
 
     @Enumerated(EnumType.STRING)
     @Column(name = "source_type")
@@ -233,22 +233,8 @@ public class Product {
     @Column(name = "last_sync")
     private LocalDateTime lastSync;
 
-    @ElementCollection
-    @CollectionTable(name = "product_platform_data", joinColumns = @JoinColumn(name = "product_id"))
-    @MapKeyColumn(name = "data_key")
-    @Column(name = "data_value")
-    private Map<String, String> platformSpecificData = new HashMap<>();
-
-    // ==============================================
-    // ЗВ'ЯЗКИ
-    // ==============================================
-
-    @ManyToMany(mappedBy = "products", fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
     private Set<DataSet> datasets = new HashSet<>();
-
-    // ==============================================
-    // БІЗНЕС ЛОГІКА
-    // ==============================================
 
     @PrePersist
     protected void onCreate() {
@@ -269,16 +255,43 @@ public class Product {
         updatePresenceStatus();
     }
 
+    // ==============================================
+    // БІЗНЕС ЛОГІКА
+    // ==============================================
+
     /**
      * Розрахунок продажної ціни з урахуванням націнки
      */
     public void calculateSellingPrice() {
         if (originalPrice != null && markupPercentage != null) {
             BigDecimal markup = originalPrice.multiply(markupPercentage)
-                    .divide(BigDecimal.valueOf(100), 4, BigDecimal.ROUND_HALF_UP);
-            sellingPrice = originalPrice.add(markup);
+                    .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            BigDecimal rawPrice = originalPrice.add(markup);
+
+            sellingPrice = roundToMarketingPriceNear(rawPrice);
         }
     }
+
+    private BigDecimal roundToMarketingPriceNear(BigDecimal price) {
+        BigDecimal[] popularSteps = {
+                new BigDecimal("49"), new BigDecimal("99"),
+                new BigDecimal("149"), new BigDecimal("199"), new BigDecimal("249"),
+                new BigDecimal("299"), new BigDecimal("399"), new BigDecimal("499"),
+                new BigDecimal("599"), new BigDecimal("699"), new BigDecimal("799"),
+                new BigDecimal("899"), new BigDecimal("999"), new BigDecimal("1499"),
+                new BigDecimal("1999"), new BigDecimal("2499"), new BigDecimal("2999")
+        };
+
+        for (int i = popularSteps.length - 1; i >= 0; i--) {
+            if (popularSteps[i].compareTo(price) <= 0) {
+                return popularSteps[i];
+            }
+        }
+
+        BigDecimal fallback = price.divide(BigDecimal.TEN, 0, RoundingMode.DOWN).multiply(BigDecimal.TEN);
+        return fallback;
+    }
+
 
     /**
      * Оновлення статусу готовності до експорту в Horoshop
@@ -291,7 +304,7 @@ public class Product {
      * Перевірка готовності до експорту в Horoshop
      */
     public boolean isReadyForHoroshop() {
-        return name != null && !name.trim().isEmpty() &&
+        return externalName != null && !externalName.trim().isEmpty() &&
                 sellingPrice != null && sellingPrice.compareTo(BigDecimal.ZERO) > 0 &&
                 (seoTitleUa != null || seoTitleRu != null) &&
                 (descriptionUa != null || descriptionRu != null) &&
@@ -300,11 +313,88 @@ public class Product {
     }
 
     /**
+     * Перевірка чи товар є копією бренду
+     */
+    public boolean isBrandReplica() {
+        return Boolean.TRUE.equals(isReplica);
+    }
+
+    /**
+     * Отримання оптимізованого заголовку для мови
+     */
+    public String getOptimizedTitle(String lang) {
+        return switch (lang.toLowerCase()) {
+            case "ua", "uk" -> seoTitleUa != null ? seoTitleUa : externalName;
+            case "ru" -> seoTitleRu != null ? seoTitleRu : externalName;
+            case "en" -> seoTitleEn != null ? seoTitleEn : externalName;
+            default -> seoTitleUa != null ? seoTitleUa :
+                    (seoTitleRu != null ? seoTitleRu : externalName);
+        };
+    }
+
+    /**
+     * Отримання оптимізованого опису для мови
+     */
+    public String getOptimizedDescription(String lang) {
+        return switch (lang.toLowerCase()) {
+            case "ua", "uk" -> descriptionUa != null ? descriptionUa : externalDescription;
+            case "ru" -> descriptionRu != null ? descriptionRu : externalDescription;
+            case "en" -> descriptionEn != null ? descriptionEn : externalDescription;
+            default -> descriptionUa != null ? descriptionUa :
+                    (descriptionRu != null ? descriptionRu : externalDescription);
+        };
+    }
+
+    /**
+     * Отримання коroткого опису для мови
+     */
+    public String getShortDescription(String lang) {
+        return switch (lang.toLowerCase()) {
+            case "ua", "uk" -> shortDescriptionUa;
+            case "ru" -> shortDescriptionRu;
+            case "en" -> shortDescriptionEn;
+            default -> shortDescriptionUa != null ? shortDescriptionUa : shortDescriptionRu;
+        };
+    }
+
+    /**
+     * Отримання meta опису для мови
+     */
+    public String getMetaDescription(String lang) {
+        return switch (lang.toLowerCase()) {
+            case "ua", "uk" -> metaDescriptionUa;
+            case "ru" -> metaDescriptionRu;
+            case "en" -> metaDescriptionEn;
+            default -> metaDescriptionUa != null ? metaDescriptionUa : metaDescriptionRu;
+        };
+    }
+
+    /**
+     * Отримання ключових слів для мови
+     */
+    public Set<String> getKeywordsForLang(String lang) {
+        return switch (lang.toLowerCase()) {
+            case "ua", "uk" -> keywordsUa;
+            case "ru" -> keywordsRu;
+            case "en" -> keywordsEn;
+            default -> keywordsUa;
+        };
+    }
+
+    /**
+     * Генерація Horoshop article якщо потрібно
+     */
+    public String getHoroshopArticleOrDefault() {
+        return horoshopArticle != null ? horoshopArticle :
+                (externalId.length() > 50 ? externalId.substring(0, 50) : externalId);
+    }
+
+    /**
      * Оновлення головного зображення
      */
     public void updateMainImageUrl() {
         if (imageUrls != null && !imageUrls.isEmpty()) {
-            mainImageUrl = imageUrls.getFirst();
+            mainImageUrl = imageUrls.get(0);
         }
     }
 
@@ -322,102 +412,6 @@ public class Product {
     }
 
     /**
-     * Отримання оптимізованого заголовку для мови
-     */
-    public String getOptimizedTitle(String lang) {
-        return switch (lang.toLowerCase()) {
-            case "ua", "uk" -> seoTitleUa != null ? seoTitleUa : name;
-            case "ru" -> seoTitleRu != null ? seoTitleRu : name;
-            default -> seoTitleUa != null ? seoTitleUa :
-                    (seoTitleRu != null ? seoTitleRu : name);
-        };
-    }
-
-    /**
-     * Отримання оптимізованого опису для мови
-     */
-    public String getOptimizedDescription(String lang) {
-        return switch (lang.toLowerCase()) {
-            case "ua", "uk" -> descriptionUa != null ? descriptionUa : originalDescription;
-            case "ru" -> descriptionRu != null ? descriptionRu : originalDescription;
-            default -> descriptionUa != null ? descriptionUa :
-                    (descriptionRu != null ? descriptionRu : originalDescription);
-        };
-    }
-
-    /**
-     * Отримання meta опису для мови
-     */
-    public String getOptimizedMetaDescription(String lang) {
-        return switch (lang.toLowerCase()) {
-            case "ua", "uk" -> metaDescriptionUa;
-            case "ru" -> metaDescriptionRu;
-            default -> metaDescriptionUa != null ? metaDescriptionUa : metaDescriptionRu;
-        };
-    }
-
-    /**
-     * Генерація Horoshop article якщо потрібно
-     */
-    public String getHoroshopArticleOrDefault() {
-        return horoshopArticle != null ? horoshopArticle :
-                (externalId.length() > 50 ? externalId.substring(0, 50) : externalId);
-    }
-
-    /**
-     * Додавання зображення
-     */
-    public void addImageUrl(String imageUrl) {
-        if (imageUrl != null && !imageUrl.trim().isEmpty() && !imageUrls.contains(imageUrl)) {
-            imageUrls.add(imageUrl);
-            if (mainImageUrl == null) {
-                mainImageUrl = imageUrl;
-            }
-        }
-    }
-
-    /**
-     * Додавання тегу
-     */
-    public void addTag(String tag) {
-        if (tag != null && !tag.trim().isEmpty() && tags.size() < 10) {
-            tags.add(tag.trim().toLowerCase());
-        }
-    }
-
-    /**
-     * Встановлення характеристики
-     */
-    public void setAttribute(String key, String value) {
-        if (key != null && value != null) {
-            attributes.put(key, value);
-        }
-    }
-
-    /**
-     * Отримання характеристики
-     */
-    public String getAttribute(String key) {
-        return attributes.get(key);
-    }
-
-    /**
-     * Перевірка чи товар є варіантом
-     */
-    public boolean isVariant() {
-        return groupId != null && !groupId.trim().isEmpty();
-    }
-
-    /**
-     * Перевірка чи потрібна синхронізація
-     */
-    public boolean needsSync() {
-        if (lastSync == null) return true;
-
-        return updatedAt != null && updatedAt.isAfter(lastSync);
-    }
-
-    /**
      * Перевірка чи товар має низький залишок
      */
     public boolean hasLowStock() {
@@ -425,7 +419,7 @@ public class Product {
     }
 
     /**
-     * Перевірка чи товар новий (створений менше ніж 30 днів тому)
+     * Перевірка чи товар новий
      */
     public boolean isNew() {
         return createdAt != null &&
@@ -433,7 +427,7 @@ public class Product {
     }
 
     /**
-     * Перевірка чи товар популярний (високий trend score)
+     * Перевірка чи товар популярний
      */
     public boolean isPopular() {
         return trendScore != null &&
@@ -441,34 +435,60 @@ public class Product {
     }
 
     /**
-     * Генерація унікального ключа для кешування
+     * Встановлення brand detection результатів
      */
-    public String getCacheKey() {
-        return String.format("%s_%s_%s",
-                sourceType != null ? sourceType.name() : "UNKNOWN",
-                groupId != null ? groupId : "single",
-                externalId);
+    public void setBrandDetectionResults(String brandName, BigDecimal confidence,
+                                         boolean isReplica, List<String> indicators) {
+        this.detectedBrandName = brandName;
+        this.brandDetected = brandName != null;
+        this.isReplica = isReplica;
+
+        if (indicators != null && !indicators.isEmpty()) {
+            this.replicaIndicators = String.join(";", indicators);
+        }
+    }
+
+
+    public void setNormalizedSizeInfo(String originalSize, String normalizedSize,
+                                      String sizeType) {
+        this.originalSize = originalSize;
+        this.normalizedSize = normalizedSize;
+        this.sizeType = sizeType;
     }
 
     /**
-     * Копіювання AI даних з іншого продукту (для варіантів)
+     * Встановлення AI контенту для всіх мов
      */
-    public void copyAiDataFrom(Product source) {
-        this.seoTitleUa = source.seoTitleUa;
-        this.seoTitleRu = source.seoTitleRu;
-        this.descriptionUa = source.descriptionUa;
-        this.descriptionRu = source.descriptionRu;
-        this.metaDescriptionUa = source.metaDescriptionUa;
-        this.metaDescriptionRu = source.metaDescriptionRu;
-        this.trendScore = source.trendScore;
-        this.aiAnalyzed = true;
-        this.aiAnalysisDate = LocalDateTime.now();
-        this.aiConfidenceScore = source.aiConfidenceScore;
+    public void setMultilingualContent(String titleUa, String titleRu, String titleEn,
+                                       String descUa, String descRu, String descEn,
+                                       String shortDescUa, String shortDescRu, String shortDescEn,
+                                       String metaUa, String metaRu, String metaEn) {
+        this.seoTitleUa = titleUa;
+        this.seoTitleRu = titleRu;
+        this.seoTitleEn = titleEn;
 
-        // Копіюємо теги
-        if (source.tags != null) {
-            this.tags.addAll(source.tags);
-        }
+        this.descriptionUa = descUa;
+        this.descriptionRu = descRu;
+        this.descriptionEn = descEn;
+
+        this.shortDescriptionUa = shortDescUa;
+        this.shortDescriptionRu = shortDescRu;
+        this.shortDescriptionEn = shortDescEn;
+
+        this.metaDescriptionUa = metaUa;
+        this.metaDescriptionRu = metaRu;
+        this.metaDescriptionEn = metaEn;
+
+        this.aiAnalysisDate = LocalDateTime.now();
+    }
+
+    /**
+     * Встановлення ключових слів для всіх мов
+     */
+    public void setMultilingualKeywords(Set<String> keywordsUa, Set<String> keywordsRu, Set<String> keywordsEn) {
+        this.keywordsUa = keywordsUa != null ? keywordsUa : new HashSet<>();
+        this.keywordsRu = keywordsRu != null ? keywordsRu : new HashSet<>();
+        this.keywordsEn = keywordsEn != null ? keywordsEn : new HashSet<>();
     }
 
     /**
@@ -495,34 +515,5 @@ public class Product {
         horoshopLastExport = LocalDateTime.now();
         horoshopStatus = success ? "SUCCESS" : "ERROR";
         horoshopErrorMessage = success ? null : message;
-    }
-
-    /**
-     * Валідація перед збереженням
-     */
-    public List<String> validate() {
-        List<String> errors = new ArrayList<>();
-
-        if (name == null || name.trim().isEmpty()) {
-            errors.add("Product name is required");
-        }
-
-        if (name != null && name.length() > 500) {
-            errors.add("Product name is too long (max 500 characters)");
-        }
-
-        if (sellingPrice != null && sellingPrice.compareTo(BigDecimal.ZERO) < 0) {
-            errors.add("Selling price cannot be negative");
-        }
-
-        if (stock != null && stock < 0) {
-            errors.add("Stock cannot be negative");
-        }
-
-        if (externalId == null || externalId.trim().isEmpty()) {
-            errors.add("External ID is required");
-        }
-
-        return errors;
     }
 }
