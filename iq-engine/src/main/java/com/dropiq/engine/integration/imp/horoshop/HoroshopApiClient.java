@@ -64,7 +64,7 @@ public class HoroshopApiClient {
 
             if (response.getStatusCode() == HttpStatus.OK) {
                 Map<String, Object> authResponse = objectMapper.readValue(response.getBody(), Map.class);
-                String token = ((LinkedHashMap) authResponse.get("response")).get("token").toString();;
+                String token = ((LinkedHashMap) authResponse.get("response")).get("token").toString();
                 log.info("Successfully authenticated with Horoshop");
                 return token;
             } else {
@@ -130,13 +130,15 @@ public class HoroshopApiClient {
     }
 
     /**
-     * Import single batch of products
+     * Import single batch of products - FIXED: Token now passed correctly in body
      */
     public HoroshopBatchResponse importProductBatch(HoroshopConfig config, List<HoroshopProduct> products) {
         try {
+            // Token should be passed in the request body, not headers
             HoroshopBatchImportRequest request = new HoroshopBatchImportRequest();
             request.setProducts(products);
-            request.setToken(config.getToken());
+            request.setToken(config.getToken()); // Token in body
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -162,7 +164,7 @@ public class HoroshopApiClient {
     }
 
     /**
-     * Update existing product
+     * Update existing product - FIXED: Token now passed correctly in body
      */
     public HoroshopSyncStatus updateProduct(HoroshopConfig config, HoroshopProduct product) {
         log.debug("Updating product: {}", product.getArticle());
@@ -172,12 +174,13 @@ public class HoroshopApiClient {
         status.setTimestamp(LocalDateTime.now());
 
         try {
-            HttpHeaders headers = createAuthHeaders(config);
+            HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // Create single-product batch
+            // Create single-product batch with token in body
             HoroshopBatchImportRequest request = new HoroshopBatchImportRequest();
             request.setProducts(List.of(product));
+            request.setToken(config.getToken()); // Token in body
             request.getSettings().setUpdateExisting(true);
 
             HttpEntity<HoroshopBatchImportRequest> entity = new HttpEntity<>(request, headers);
@@ -227,7 +230,7 @@ public class HoroshopApiClient {
     }
 
     /**
-     * Delete product by article/SKU
+     * Delete product by article/SKU - FIXED: Token now passed correctly in body
      */
     public HoroshopSyncStatus deleteProduct(HoroshopConfig config, String article) {
         log.debug("Deleting product: {}", article);
@@ -237,9 +240,14 @@ public class HoroshopApiClient {
         status.setTimestamp(LocalDateTime.now());
 
         try {
-            HttpHeaders headers = createAuthHeaders(config);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            Map<String, String> deleteRequest = Map.of("article", article);
+            // Token should be in body
+            Map<String, String> deleteRequest = new HashMap<>();
+            deleteRequest.put("article", article);
+            deleteRequest.put("token", config.getToken()); // Token in body
+
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(deleteRequest, headers);
 
             ResponseEntity<HoroshopApiResponse> response = restTemplate.exchange(
@@ -274,17 +282,23 @@ public class HoroshopApiClient {
     }
 
     /**
-     * Get all categories from Horoshop
+     * Get all categories from Horoshop - FIXED: Token now passed correctly in body or query param
      */
     public List<HoroshopCategory> getCategories(HoroshopConfig config) {
         log.info("Fetching categories from Horoshop");
 
         try {
-            HttpHeaders headers = createAuthHeaders(config);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // For GET requests, token might need to be in query params or body
+            // Using query param approach for GET requests
+            String url = config.getApiUrl() + PAGES_EXPORT_ENDPOINT + "?token=" + config.getToken();
+
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    config.getApiUrl() + PAGES_EXPORT_ENDPOINT,
+                    url,
                     HttpMethod.GET,
                     entity,
                     String.class
@@ -304,16 +318,21 @@ public class HoroshopApiClient {
     }
 
     /**
-     * Create or update category
+     * Create or update category - FIXED: Token now passed correctly in body
      */
     public HoroshopCategory createCategory(HoroshopConfig config, HoroshopCategory category) {
         log.debug("Creating/updating category: {}", category.getName());
 
         try {
-            HttpHeaders headers = createAuthHeaders(config);
+            HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<HoroshopCategory> entity = new HttpEntity<>(category, headers);
+            // Create request body with token
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("category", category);
+            requestBody.put("token", config.getToken()); // Token in body
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<HoroshopCategory> response = restTemplate.exchange(
                     config.getApiUrl() + CATEGORIES_ENDPOINT,
@@ -335,17 +354,17 @@ public class HoroshopApiClient {
     }
 
     /**
-     * Export products from Horoshop
+     * Export products from Horoshop - FIXED: Token now passed correctly in query params
      */
     public List<HoroshopProduct> exportProducts(HoroshopConfig config, HoroshopExportSettings settings) {
         log.info("Exporting products from Horoshop");
 
         try {
-            HttpHeaders headers = createAuthHeaders(config);
+            HttpHeaders headers = new HttpHeaders();
 
-            // Build query parameters
+            // Build query parameters including token
             String queryParams = buildExportQueryParams(settings);
-            String url = config.getApiUrl() + CATALOG_EXPORT_ENDPOINT + "?" + queryParams;
+            String url = config.getApiUrl() + CATALOG_EXPORT_ENDPOINT + "?token=" + config.getToken() + "&" + queryParams;
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -398,17 +417,19 @@ public class HoroshopApiClient {
     }
 
     /**
-     * Test API connection
+     * Test API connection - FIXED: Token now passed correctly in query params
      */
     public boolean testConnection(HoroshopConfig config) {
         try {
             log.info("Testing connection to Horoshop API");
 
-            HttpHeaders headers = createAuthHeaders(config);
+            HttpHeaders headers = new HttpHeaders();
+            String url = config.getApiUrl() + PAGES_EXPORT_ENDPOINT + "?token=" + config.getToken() + "&limit=1";
+
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    config.getApiUrl() + PAGES_EXPORT_ENDPOINT + "?limit=1",
+                    url,
                     HttpMethod.GET,
                     entity,
                     String.class
@@ -426,13 +447,10 @@ public class HoroshopApiClient {
 
     // Helper methods
 
-    private HttpHeaders createAuthHeaders(HoroshopConfig config) {
-        HttpHeaders headers = new HttpHeaders();
-        if (config.getToken() != null) {
-            headers.set("Authorization", "Bearer " + config.getToken());
-        }
-        return headers;
-    }
+    /**
+     * REMOVED: createAuthHeaders method as token is now passed in body/query params
+     * Token authentication is handled differently for each endpoint type
+     */
 
     private <T> List<List<T>> splitIntoBatches(List<T> list, int batchSize) {
         List<List<T>> batches = new ArrayList<>();

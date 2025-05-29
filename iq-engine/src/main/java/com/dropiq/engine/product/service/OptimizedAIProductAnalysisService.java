@@ -48,7 +48,6 @@ public class OptimizedAIProductAnalysisService {
     /**
      * Main method for comprehensive Horoshop product analysis
      */
-    @Transactional
     public Product analyzeProductForHoroshop(Long productId) {
         try {
             Product product = productRepository.findById(productId)
@@ -104,7 +103,6 @@ public class OptimizedAIProductAnalysisService {
     /**
      * Batch analysis for entire dataset with Horoshop optimization
      */
-    @Transactional
     public Integer analyzeDatasetForHoroshop(Long datasetId) {
         try {
             DataSet dataset = dataSetRepository.findById(datasetId)
@@ -281,6 +279,11 @@ public class OptimizedAIProductAnalysisService {
 
         // Update category assignment
         assignOptimalCategory(product, analysis);
+
+        product.setStyle(analysis.getStyle());
+        product.setImagesQualityScore(BigDecimal.valueOf(analysis.getVisualQuality()));
+        product.setMaterial(analysis.getMaterial());
+        product.setColor(analysis.getColor());
 
         log.debug("Applied comprehensive analysis to product: {}", product.getExternalName());
     }

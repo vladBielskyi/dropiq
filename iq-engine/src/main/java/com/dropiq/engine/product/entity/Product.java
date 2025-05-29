@@ -2,6 +2,7 @@ package com.dropiq.engine.product.entity;
 
 import com.dropiq.engine.integration.exp.model.SourceType;
 import com.dropiq.engine.product.model.ProductStatus;
+import com.dropiq.engine.user.service.PriceUtil;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -233,7 +234,7 @@ public class Product {
     @Column(name = "last_sync")
     private LocalDateTime lastSync;
 
-    @ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "products", fetch = FetchType.EAGER)
     private Set<DataSet> datasets = new HashSet<>();
 
     @PrePersist
@@ -266,32 +267,11 @@ public class Product {
         if (originalPrice != null && markupPercentage != null) {
             BigDecimal markup = originalPrice.multiply(markupPercentage)
                     .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
-            BigDecimal rawPrice = originalPrice.add(markup);
+            BigDecimal calculatedPrice = originalPrice.add(markup);
 
-            sellingPrice = roundToMarketingPriceNear(rawPrice);
+            sellingPrice = PriceUtil.roundToMarketingPriceUp(calculatedPrice);
         }
     }
-
-    private BigDecimal roundToMarketingPriceNear(BigDecimal price) {
-        BigDecimal[] popularSteps = {
-                new BigDecimal("49"), new BigDecimal("99"),
-                new BigDecimal("149"), new BigDecimal("199"), new BigDecimal("249"),
-                new BigDecimal("299"), new BigDecimal("399"), new BigDecimal("499"),
-                new BigDecimal("599"), new BigDecimal("699"), new BigDecimal("799"),
-                new BigDecimal("899"), new BigDecimal("999"), new BigDecimal("1499"),
-                new BigDecimal("1999"), new BigDecimal("2499"), new BigDecimal("2999")
-        };
-
-        for (int i = popularSteps.length - 1; i >= 0; i--) {
-            if (popularSteps[i].compareTo(price) <= 0) {
-                return popularSteps[i];
-            }
-        }
-
-        BigDecimal fallback = price.divide(BigDecimal.TEN, 0, RoundingMode.DOWN).multiply(BigDecimal.TEN);
-        return fallback;
-    }
-
 
     /**
      * Оновлення статусу готовності до експорту в Horoshop

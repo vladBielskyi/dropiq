@@ -87,12 +87,13 @@ public class FeatureProductAnalysisResult {
     private List<String> crossSellCategories = new ArrayList<>(); // Cross-sell categories
 
     // ===== QUALITY METRICS =====
-    private Double qualityScore;             // Overall quality score
+    private Double qualityScore;
+    private Double visualQuality;// Overall quality score
     private Double analysisConfidence;       // Analysis confidence 0-1
     private Long analysisTimestamp;          // Analysis timestamp
     private String analysisVersion;          // Analysis version
 
-    public HoroshopProductAnalysisResult() {
+    public FeatureProductAnalysisResult() {
         this.analysisTimestamp = System.currentTimeMillis();
         this.analysisVersion = "4.0-horoshop-optimized";
     }

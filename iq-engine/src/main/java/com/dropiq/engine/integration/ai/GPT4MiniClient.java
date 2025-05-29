@@ -305,6 +305,8 @@ public class GPT4MiniClient {
             КРИТЕРІЇ:
             - Створи НОВУ комерційну назву, ігноруючи коди
             - Базуйся на тому, що БАЧИШ на фото
+            - Не використовуй Розміри, Ціни, інші назви в описах
+            - Не викорситовуй дивні назви та слова. Все повинно бути Human like
             - Використовуй професійну термінологію  
             - Адаптуй під українську аудиторію
             - Поверни ТІЛЬКИ JSON без пояснень
@@ -422,6 +424,10 @@ public class GPT4MiniClient {
             JsonNode marketingNode = rootNode.get("marketingData");
             JsonNode horoshopNode = rootNode.get("horoshopIntegration");
 
+            result.setVisualQuality(getJsonDouble(visualNode != null ? visualNode : rootNode, "visualQuality",
+                    5.0));
+            result.setMaterial(getJsonString(visualNode != null ? visualNode : rootNode, "material"));
+
             // Basic product info
             result.setCommercialTitle(getJsonString(commercialNode != null ? commercialNode : rootNode, "commercialTitle"));
             result.setSeoTitle(getJsonString(commercialNode != null ? commercialNode : rootNode, "seoTitle"));
@@ -467,9 +473,9 @@ public class GPT4MiniClient {
             result.setBrandName(getJsonString(attrSource, "brandName"));
             result.setModelName(getJsonString(attrSource, "modelName"));
             result.setDetectedGender(getJsonString(attrSource, "detectedGender"));
-            result.setColor(getJsonString(attrSource, "color"));
-            result.setMaterial(getJsonString(attrSource, "material"));
-            result.setStyle(getJsonString(attrSource, "style"));
+            result.setColor(getJsonString(visualNode, "primaryColor"));
+            result.setMaterial(getJsonString(visualNode, "material"));
+            result.setStyle(getJsonString(visualNode, "style"));
             result.setSeason(getJsonString(attrSource, "season"));
             result.setOccasion(getJsonString(attrSource, "occasion"));
 
